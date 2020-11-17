@@ -1,0 +1,4 @@
+include ':huawei'
+include ':inception'
+include ':app'
+rootProject.name = "InceptionSdkSample"
