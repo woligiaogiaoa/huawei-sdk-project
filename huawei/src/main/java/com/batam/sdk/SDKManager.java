@@ -1,8 +1,7 @@
-package com.batam.huawei;
+package com.batam.sdk;
 
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
@@ -10,6 +9,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.batam.inception.Inception;
 import com.huawei.hmf.tasks.OnFailureListener;
 import com.huawei.hmf.tasks.OnSuccessListener;
 import com.huawei.hmf.tasks.Task;
@@ -71,6 +71,7 @@ public class SDKManager {
     public void setApplicationContext(Application application) {
         this.application = application;
         HuaweiMobileServicesUtil.setApplication(application);
+        Inception.getInstance().setApplication(application);
     }
 
     public void init(Activity activity) {
@@ -402,6 +403,7 @@ public class SDKManager {
             sdkManager.showLog("check update failed");
         }
     }
+
     private void showLog(String result) {
         Toast.makeText(activity, result, Toast.LENGTH_SHORT).show();
     }

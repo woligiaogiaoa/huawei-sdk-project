@@ -1,4 +1,4 @@
-package com.batam.huawei;
+package com.batam.sdk;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

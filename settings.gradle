@@ -1,3 +1,4 @@
+include ':oaid_sdk_1.0.23_min_sdk_16'
 include ':huawei'
 include ':inception'
 include ':app'

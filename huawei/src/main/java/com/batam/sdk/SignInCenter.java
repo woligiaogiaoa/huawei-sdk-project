@@ -1,4 +1,4 @@
-package com.batam.huawei;
+package com.batam.sdk;
 
 import com.huawei.hms.support.hwid.result.AuthHuaweiId;
 

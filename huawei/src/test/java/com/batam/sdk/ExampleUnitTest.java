@@ -1,4 +1,4 @@
-package com.batam.huawei;
+package com.batam.sdk;
 
 import org.junit.Test;
 

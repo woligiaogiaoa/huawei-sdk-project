@@ -2,7 +2,7 @@ package com.batam.inceptionsdksample;
 
 import android.app.Application;
 
-import com.batam.huawei.SDKManager;
+import com.batam.sdk.SDKManager;
 
 public class App extends Application {
     @Override

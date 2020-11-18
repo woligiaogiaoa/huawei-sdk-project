@@ -1,11 +1,10 @@
 package com.batam.inceptionsdksample;
 
-import android.net.nsd.NsdManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
-import com.batam.huawei.SDKManager;
+import com.batam.sdk.SDKManager;
 
 
 public class MainActivity extends AppCompatActivity {
