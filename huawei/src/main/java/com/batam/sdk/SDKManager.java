@@ -15,6 +15,11 @@ import com.huawei.hmf.tasks.OnSuccessListener;
 import com.huawei.hmf.tasks.Task;
 import com.huawei.hms.api.HuaweiMobileServicesUtil;
 import com.huawei.hms.common.ApiException;
+import com.huawei.hms.iap.Iap;
+import com.huawei.hms.iap.IapApiException;
+import com.huawei.hms.iap.entity.ProductInfo;
+import com.huawei.hms.iap.entity.ProductInfoReq;
+import com.huawei.hms.iap.entity.ProductInfoResult;
 import com.huawei.hms.jos.AppUpdateClient;
 import com.huawei.hms.jos.JosApps;
 import com.huawei.hms.jos.JosAppsClient;
@@ -35,6 +40,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -45,7 +52,10 @@ public class SDKManager {
     private final static int SIGN_IN_INTENT = 3000;
     private final static int HEARTBEAT_TIME = 15 * 60 * 1000;
 
+
     private String playerId;
+
+    private PayDelegate payDelegate;
 
     private String sessionId = null;
 
@@ -56,6 +66,14 @@ public class SDKManager {
     private Application application;
 
     private Activity activity;
+
+    public Activity getActivity() {
+        return activity;
+    }
+
+    public void setActivity(Activity activity) {
+        this.activity = activity;
+    }
 
     private SDKManager() {
     }
@@ -76,11 +94,53 @@ public class SDKManager {
 
     public void init(Activity activity) {
         this.activity = activity;
+        payDelegate=new PayDelegate();
         JosAppsClient appsClient = JosApps.getJosAppsClient(activity);
         appsClient.init();
         showLog("init success");
         hasInit = true;
         checkUpdate();
+        loadProducts();
+
+     }
+
+    private void loadProducts() {
+        //load id lists , then load products
+    }
+
+    ////fixme:获取商品id列表
+    List<String> productIdList = new ArrayList<>();
+
+    List<ProductInfo> productList=new ArrayList<>();
+
+    private void getProductsByIds() {
+
+// 查询的商品必须是开发者在AppGallery Connect网站配置的商品
+        ProductInfoReq req = new ProductInfoReq();
+// priceType: 0：消耗型商品; 1：非消耗型商品; 2：订阅型商品
+        req.setPriceType(0);
+        req.setProductIds(productIdList);
+// 获取调用接口的Activity对象
+        Activity activity = getActivity();
+// 调用obtainProductInfo接口获取AppGallery Connect网站配置的商品的详情信息
+        Task<ProductInfoResult> task = Iap.getIapClient(activity).obtainProductInfo(req);
+        task.addOnSuccessListener(new OnSuccessListener<ProductInfoResult>() {
+            @Override
+            public void onSuccess(ProductInfoResult result) {
+                // 获取接口请求成功时返回的商品详情信息
+                productList = result.getProductInfoList();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(Exception e) {
+                if (e instanceof IapApiException) {
+                    IapApiException apiException = (IapApiException) e;
+                    int returnCode = apiException.getStatusCode();
+                } else {
+                    // 其他外部错误
+                }
+            }
+        });
     }
 
     public void onStop() {
@@ -138,9 +198,8 @@ public class SDKManager {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (SIGN_IN_INTENT == requestCode) {
             handleSignInResult(data);
-        } else {
-            showLog("unknown requestCode in onActivityResult");
         }
+        payDelegate.onActivityResult(requestCode,resultCode,data);
     }
 
     private void handleSignInResult(Intent data) {
@@ -407,4 +466,6 @@ public class SDKManager {
     private void showLog(String result) {
         Toast.makeText(activity, result, Toast.LENGTH_SHORT).show();
     }
+
+
 }
