@@ -5,7 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.nfc.Tag;
+import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -20,13 +22,21 @@ import com.huawei.hms.iap.entity.ConsumeOwnedPurchaseResult;
 import com.huawei.hms.iap.entity.InAppPurchaseData;
 import com.huawei.hms.iap.entity.IsEnvReadyResult;
 import com.huawei.hms.iap.entity.OrderStatusCode;
+import com.huawei.hms.iap.entity.OwnedPurchasesReq;
+import com.huawei.hms.iap.entity.OwnedPurchasesResult;
 import com.huawei.hms.iap.entity.PurchaseIntentReq;
 import com.huawei.hms.iap.entity.PurchaseIntentResult;
 import com.huawei.hms.iap.entity.PurchaseResultInfo;
 import com.huawei.hms.iap.util.IapClientHelper;
 import com.huawei.hms.support.api.client.Status;
+import com.huawei.hms.support.log.common.Base64;
 
 import org.json.JSONException;
+
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
 
 public class PayDelegate {
 
@@ -93,6 +103,7 @@ public class PayDelegate {
             switch(purchaseResultInfo.getReturnCode()) {
                 case OrderStatusCode.ORDER_STATE_SUCCESS:
                     consumeOwnedPurchase(SDKManager.getInstance().getActivity(), purchaseResultInfo.getInAppPurchaseData());
+                    Log.e(TAG,"inapppurchasedata"+purchaseResultInfo.getInAppPurchaseData().toString());
                     //fixme:支付成功之后，给服务器发订单接口调用成功才消耗
                     return;
                 case OrderStatusCode.ORDER_STATE_CANCEL:
@@ -104,6 +115,7 @@ public class PayDelegate {
                     Toast.makeText(SDKManager.getInstance().getActivity(), "you have owned the product", Toast.LENGTH_SHORT).show();
                     // you can check if the user has purchased the product and decide whether to provide goods
                     // if the purchase is a consumable product, consuming the purchase and deliver product
+                    handleOwnedProduct();
                     return;
 
                 default:
@@ -113,6 +125,50 @@ public class PayDelegate {
             return;
         }
 
+    }
+
+    private void handleOwnedProduct() {
+        // 构造一个OwnedPurchasesReq对象
+        OwnedPurchasesReq ownedPurchasesReq = new OwnedPurchasesReq();
+// priceType: 0：消耗型商品; 1：非消耗型商品; 2：订阅型商品
+        ownedPurchasesReq.setPriceType(0);
+// 获取调用接口的Activity对象
+        Activity activity = SDKManager.getInstance().getActivity();
+// 调用obtainOwnedPurchases接口获取所有已购但未发货的消耗型商品
+        Task<OwnedPurchasesResult> task = Iap.getIapClient(activity).obtainOwnedPurchases(ownedPurchasesReq);
+        task.addOnSuccessListener(new OnSuccessListener<OwnedPurchasesResult>() {
+            @Override
+            public void onSuccess(OwnedPurchasesResult result) {
+                // 获取接口请求成功的结果
+                if (result != null && result.getInAppPurchaseDataList() != null) {
+                    for (int i = 0; i < result.getInAppPurchaseDataList().size(); i++) {
+                        String inAppPurchaseData = result.getInAppPurchaseDataList().get(i);
+                        String inAppSignature = result.getInAppSignature().get(i);
+                        // 使用应用的IAP公钥验证inAppPurchaseData的签名数据
+                        // 如果验签成功，确认每个商品的购买状态。确认商品已支付后，检查此前是否已发过货，未发货则进行发货操作。发货成功后执行消耗操作
+                        try {
+                            InAppPurchaseData inAppPurchaseDataBean = new InAppPurchaseData(inAppPurchaseData);
+                            int purchaseState = inAppPurchaseDataBean.getPurchaseState();
+                            //todo:验签，发货，消耗
+                            consumeOwnedPurchase(SDKManager.getInstance().getActivity(), inAppPurchaseData);
+                            Log.e(TAG,"inapppurchasedata"+inAppPurchaseData.toString());
+                        } catch (JSONException e) {
+                        }
+                    }
+                }
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(Exception e) {
+                if (e instanceof IapApiException) {
+                    IapApiException apiException = (IapApiException) e;
+                    Status status = apiException.getStatus();
+                    int returnCode = apiException.getStatusCode();
+                } else {
+                    // 其他外部错误
+                }
+            }
+        });
     }
 
     private void startPay(String storeProductId, String developerPayloadOrderNumber) {
@@ -219,6 +275,47 @@ public class PayDelegate {
         }
 
         return req;
+    }
+
+    /**
+     * 校验签名信息
+     *
+     * @param content 结果字符串
+     * @param sign 签名字符串
+     * @param publicKey 支付公钥
+     * @return 是否校验通过
+     */
+
+    public static boolean doCheck(String content, String sign, String publicKey) {
+        if (sign == null) {
+            return false;
+        }
+        if (publicKey == null) {
+            return false;
+        }
+        try {
+            // 生成"RSA"的KeyFactory对象
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            byte[] encodedKey = Base64.decode(publicKey);
+            // 生成公钥
+            PublicKey pubKey = keyFactory.generatePublic(new X509EncodedKeySpec(encodedKey));
+            java.security.Signature signature = null;
+            // 根据SHA256WithRSA算法获取签名对象实例
+            signature = java.security.Signature.getInstance("SHA256WithRSA");
+            // 初始化验证签名的公钥
+            signature.initVerify(pubKey);
+            // 把原始报文更新到签名对象中
+            signature.update(content.getBytes(StandardCharsets.UTF_8));
+            // 将sign解码
+            byte[] bsign = Base64.decode(sign);
+            // 进行验签
+            return signature.verify(bsign);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
 }
