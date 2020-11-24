@@ -108,7 +108,7 @@ public class SDKManager {
         //load id lists , then load products
     }
 
-    ////fixme:获取商品id列表
+    //fixme:获取商品id列表
     List<String> productIdList = new ArrayList<>();
 
     List<ProductInfo> productList=new ArrayList<>();
@@ -185,6 +185,9 @@ public class SDKManager {
             }
         });
     }
+    public void pay(String productId,String payloadOrderNumber ){
+        payDelegate.pay(productId,payloadOrderNumber);
+    }
 
     private void signInNewWay() {
         Intent intent = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).getSignInIntent();
@@ -219,7 +222,7 @@ public class SDKManager {
                 showLog("Sign in success.");
                 showLog("Sign in result: " + signInResult.toJson());
                 SignInCenter.get().updateAuthHuaweiId(signInResult.getHuaweiId());
-                getCurrentPlayer();
+                login();
             } else {
                 showLog("Sign in failed: " + signInResult.getStatus().getStatusCode());
             }

@@ -14,10 +14,27 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+
+        release {
+            //默认的包的签名信息
+            storeFile file('../xxy_oversea.jks')
+            storePassword 'XUrG*Smkkh$SiK4B'
+            keyAlias 'key0'
+            keyPassword '2s#PGui36euOspq4'
+
+            v2SigningEnabled false
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
