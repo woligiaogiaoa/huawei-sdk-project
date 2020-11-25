@@ -10,6 +10,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.batam.inception.Inception;
+import com.huawei.hmf.tasks.OnCompleteListener;
 import com.huawei.hmf.tasks.OnFailureListener;
 import com.huawei.hmf.tasks.OnSuccessListener;
 import com.huawei.hmf.tasks.Task;
@@ -160,6 +161,22 @@ public class SDKManager {
     public void onResume() {
         showFloatWindowNewWay();
         Log.e(TAG, "onResume");
+    }
+
+    public void onDestroy() {
+        logout();
+        Log.e(TAG, "onDestroy");
+    }
+
+    public void logout(){
+        Task<Void> huaweiLogoutTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).signOut();
+        huaweiLogoutTask.addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(Task<Void> task) {
+                // Processing after the sign-out.
+                Log.i(TAG, "signOut complete");
+            }
+        });
     }
 
 
