@@ -112,7 +112,7 @@ public class PayDelegate {
                     return;
                 case OrderStatusCode.ORDER_PRODUCT_OWNED:
                     // The user has already owned the product.
-                    Toast.makeText(SDKManager.getInstance().getActivity(), "you have owned the product", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(SDKManager.getInstance().getActivity(), "你有订单尚未处理，正在为您处理", Toast.LENGTH_SHORT).show();
                     // you can check if the user has purchased the product and decide whether to provide goods
                     // if the purchase is a consumable product, consuming the purchase and deliver product
                     handleOwnedProduct();
