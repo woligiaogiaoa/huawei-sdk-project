@@ -56,6 +56,8 @@ public class SDKManager {
 
     private String playerId;
 
+    private String slug; //是否登录到后端
+
     private PayDelegate payDelegate;
 
     private String sessionId = null;
@@ -197,10 +199,12 @@ public class SDKManager {
                 String playerWhenResume = player.getPlayerId();
                 if(!TextUtils.isEmpty(playerId)){
                     if(!playerId.equals(playerWhenResume)){
-                        logout();
                         if(userlistener!=null){
-                            userlistener.onUserChanged();
+                            logout();
+                            userlistener.forceSignInFromScratch(); //
+
                         }
+
                     }
                 }
 
@@ -222,8 +226,9 @@ public class SDKManager {
     }
 
     public void logout(){
-        Task<Void> huaweiLogoutTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).signOut();
+        gameEnd();
         playerId=null; //sdk逻辑上的退出，不用管华为的。强制重新登陆。
+        Task<Void> huaweiLogoutTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).signOut();
         huaweiLogoutTask.addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(Task<Void> task) {
@@ -315,7 +320,8 @@ public class SDKManager {
                 showLog(result);
                 //playerId = player.getPlayerId();
                 //todo:去sdk后端登录，登陆成功 playerId赋值
-                gameBegin();
+                //gameBegin();
+                //这些也要登陆成功去调用
                 handler = new Handler() {
                     @Override
                     public void handleMessage(Message msg) {
@@ -412,6 +418,7 @@ public class SDKManager {
                 }
             }
         });
+        sessionId=null;
     }
 
     /**
@@ -538,7 +545,9 @@ public class SDKManager {
         }
     }
 
+    //show toast if debug
     private void showLog(String result) {
+        if(BuildConfig.DEBUG)
         Toast.makeText(activity, result, Toast.LENGTH_SHORT).show();
     }
 

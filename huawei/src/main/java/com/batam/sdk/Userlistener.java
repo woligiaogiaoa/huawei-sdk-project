@@ -1,5 +1,5 @@
 package com.batam.sdk;
 
 public interface Userlistener {
-    public void onUserChanged();
+    public void forceSignInFromScratch();
 }
