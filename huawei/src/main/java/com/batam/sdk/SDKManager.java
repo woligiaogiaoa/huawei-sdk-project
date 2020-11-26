@@ -62,6 +62,8 @@ public class SDKManager {
 
     private boolean hasInit = false;
 
+    private Userlistener userlistener;
+
     private Handler handler;
 
     private Application application;
@@ -81,6 +83,22 @@ public class SDKManager {
 
     public static SDKManager getInstance() {
         return SingletonHolder.sInstance;
+    }
+
+    public Application getApplication() {
+        return application;
+    }
+
+    public void setApplication(Application application) {
+        this.application = application;
+    }
+
+    public Userlistener getUserlistener() {
+        return userlistener;
+    }
+
+    public void setUserlistener(Userlistener userlistener) {
+        this.userlistener = userlistener;
     }
 
     private static class SingletonHolder {
@@ -160,7 +178,42 @@ public class SDKManager {
 
     public void onResume() {
         showFloatWindowNewWay();
+        //fixme:check player
+        checkPlayer();
         Log.e(TAG, "onResume");
+    }
+
+    private void checkPlayer() {
+        PlayersClientImpl client = (PlayersClientImpl) Games.getPlayersClient(activity);
+
+        Task<Player> task = client.getCurrentPlayer();
+        task.addOnSuccessListener(new OnSuccessListener<Player>() {
+            @Override
+            public void onSuccess(Player player) {
+                String result = "display:" + player.getDisplayName() + "\n" + "playerId:" + player.getPlayerId() + "\n"
+                        + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
+                        + "playerSign:" + player.getPlayerSign();
+                showLog(result);
+                String playerWhenResume = player.getPlayerId();
+                if(!TextUtils.isEmpty(playerId)){
+                    if(!playerId.equals(playerWhenResume)){
+                        logout();
+                        if(userlistener!=null){
+                            userlistener.onUserChanged();
+                        }
+                    }
+                }
+
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(Exception e) {
+                if (e instanceof ApiException) {
+                    String result = "rtnCode:" + ((ApiException) e).getStatusCode();
+                    showLog(result);
+                }
+            }
+        });
     }
 
     public void onDestroy() {
@@ -170,6 +223,7 @@ public class SDKManager {
 
     public void logout(){
         Task<Void> huaweiLogoutTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).signOut();
+        playerId=null; //sdk逻辑上的退出，不用管华为的。强制重新登陆。
         huaweiLogoutTask.addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(Task<Void> task) {
@@ -188,7 +242,7 @@ public class SDKManager {
                 showLog("signIn success");
                 showLog("display:" + authHuaweiId.getDisplayName());
                 SignInCenter.get().updateAuthHuaweiId(authHuaweiId);
-                getCurrentPlayer();
+                getCurrentPlayerServerLogin();
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -248,7 +302,7 @@ public class SDKManager {
         }
     }
 
-    private void getCurrentPlayer() {
+    private void getCurrentPlayerServerLogin() { //后端登录
         PlayersClientImpl client = (PlayersClientImpl) Games.getPlayersClient(activity);
 
         Task<Player> task = client.getCurrentPlayer();
@@ -259,7 +313,8 @@ public class SDKManager {
                         + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
                         + "playerSign:" + player.getPlayerSign();
                 showLog(result);
-                playerId = player.getPlayerId();
+                //playerId = player.getPlayerId();
+                //todo:去sdk后端登录，登陆成功 playerId赋值
                 gameBegin();
                 handler = new Handler() {
                     @Override
