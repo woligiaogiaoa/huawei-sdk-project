@@ -51,7 +51,7 @@ public class SDKManager {
 
     private static final String TAG = SDKManager.class.getSimpleName();
     private final static int SIGN_IN_INTENT = 3000;
-    private final static int HEARTBEAT_TIME = 15 * 60 * 1000;
+    private final static int HEARTBEAT_TIME = BuildConfig.DEBUG? 5000 :15 * 60 * 1000; //测试环境下5秒
 
 
     private String playerId;
@@ -261,7 +261,7 @@ public class SDKManager {
             }
         });
     }
-    public void pay(String productId,String payloadOrderNumber ){
+    public void pay(String productId,String payloadOrderNumber ){ //支付，准备加入双击处理
         payDelegate.pay(productId,payloadOrderNumber);
     }
 
@@ -271,7 +271,7 @@ public class SDKManager {
     }
 
     private HuaweiIdAuthParams getHuaweiIdParams() {
-        return new HuaweiIdAuthParamsHelper(HuaweiIdAuthParams.DEFAULT_AUTH_REQUEST_PARAM_GAME).createParams();
+        return new HuaweiIdAuthParamsHelper(HuaweiIdAuthParams.DEFAULT_AUTH_REQUEST_PARAM_GAME).createParams(); //todo: 待确认：需不需要setIdToken()
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
