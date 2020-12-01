@@ -8,6 +8,8 @@ import android.nfc.Tag;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
+import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -29,18 +31,23 @@ import com.huawei.hms.iap.entity.PurchaseIntentResult;
 import com.huawei.hms.iap.entity.PurchaseResultInfo;
 import com.huawei.hms.iap.util.IapClientHelper;
 import com.huawei.hms.support.api.client.Status;
-import com.huawei.hms.support.log.common.Base64;
 
 import org.json.JSONException;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 
 public class PayDelegate {
 
     private String TAG="PAY_DELEGATE";
+    private final String PAY_KEY="MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAlhOL2g5fxK4IrfGUzSKLxG0h4iLC8DcFNiRw4jUs/s0SeZPAg0duUzyjNzEsylQkHeb991ImpJjCg6L1KGQWbBJm1YSemlKwF3SWNVvdfW3x6qQryjUaAe3LYfe0xXTrtPiVPTswZj5Yqs5SqsMchcxAm9r9Cs2E/S2S1VHmiCziLGIrwz5Dvek5xT0ODKYGaFsi62QvNIJtVDJN5fWHAz7ASg4YkVQeTv2NWe/DZBvmKexkMUozmvNUQU+mqY3NV8Jup6yF+GvBCK83LtQmrq1AYciYldxUKLCQVdQZHmXhQrhRU0Ui2LFbcPhSpOPvOsW0TfVUG0l0HsGe7n0H9H2gJfQzsOtfr5UscJ/jtviYzOKkGfJ3k/NEhMUXQTrnAEUxchTL58v2vb16RJkb3Hyv/vUtSm3dCbF5fYKW5hkq5MbsIoVG0IP8rc13akjmvVAZveUxltIqkKehVg10nletkW0C8Cx5Pw8BgpU/fEgK9PQ21yKKljUyAt3uAwRJAgMBAAE=";
     private final int REQ_CODE_BUY=10001;
     private final int REQ_CODE_LOGIN=10002;
 
@@ -103,7 +110,8 @@ public class PayDelegate {
             switch(purchaseResultInfo.getReturnCode()) {
                 case OrderStatusCode.ORDER_STATE_SUCCESS:
                     consumeOwnedPurchase(SDKManager.getInstance().getActivity(), purchaseResultInfo.getInAppPurchaseData());
-                    Log.e(TAG,"inapppurchasedata"+purchaseResultInfo.getInAppPurchaseData().toString());
+                    Log.e(TAG,"inapppurchasedata"+purchaseResultInfo.getInAppPurchaseData());
+                    Log.e(TAG,"inapppurchasesignature"+purchaseResultInfo.getInAppDataSignature());
                     //fixme:支付成功之后，给服务器发订单接口调用成功才消耗
                     return;
                 case OrderStatusCode.ORDER_STATE_CANCEL:
@@ -278,42 +286,49 @@ public class PayDelegate {
     }
 
     /**
-     * 校验签名信息
-     *
-     * @param content 结果字符串
-     * @param sign 签名字符串
-     * @param publicKey 支付公钥
-     * @return 是否校验通过
+     * the method to check the signature for the data returned from the interface
+     * @param content Unsigned data
+     * @param sign the signature for content
+     * @param publicKey the public of the application
+     * @return boolean
      */
 
-    public static boolean doCheck(String content, String sign, String publicKey) {
-        if (sign == null) {
+    private static final String SIGN_ALGORITHMS = "SHA256WithRSA";
+
+    public  boolean doCheck(String content, String sign, String publicKey) {
+        if (TextUtils.isEmpty(publicKey)) {
+            Log.e(TAG, "publicKey is null");
             return false;
         }
-        if (publicKey == null) {
+
+        if (TextUtils.isEmpty(content) || TextUtils.isEmpty(sign)) {
+            Log.e(TAG, "data is error");
             return false;
         }
+
         try {
-            // 生成"RSA"的KeyFactory对象
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            byte[] encodedKey = Base64.decode(publicKey);
-            // 生成公钥
+            byte[] encodedKey = Base64.decode(publicKey, Base64.DEFAULT);
             PublicKey pubKey = keyFactory.generatePublic(new X509EncodedKeySpec(encodedKey));
-            java.security.Signature signature = null;
-            // 根据SHA256WithRSA算法获取签名对象实例
-            signature = java.security.Signature.getInstance("SHA256WithRSA");
-            // 初始化验证签名的公钥
+
+            java.security.Signature signature = java.security.Signature.getInstance(SIGN_ALGORITHMS);
+
             signature.initVerify(pubKey);
-            // 把原始报文更新到签名对象中
-            signature.update(content.getBytes(StandardCharsets.UTF_8));
-            // 将sign解码
-            byte[] bsign = Base64.decode(sign);
-            // 进行验签
-            return signature.verify(bsign);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            e.printStackTrace();
+            signature.update(content.getBytes("utf-8"));
+
+            boolean bverify = signature.verify(Base64.decode(sign, Base64.DEFAULT));
+            return bverify;
+
+        } catch (NoSuchAlgorithmException e) {
+            Log.e(TAG, "doCheck NoSuchAlgorithmException" + e);
+        } catch (InvalidKeySpecException e) {
+            Log.e(TAG, "doCheck InvalidKeySpecException" + e);
+        } catch (InvalidKeyException e) {
+            Log.e(TAG, "doCheck InvalidKeyException" + e);
+        } catch (SignatureException e) {
+            Log.e(TAG, "doCheck SignatureException" + e);
+        } catch (UnsupportedEncodingException e) {
+            Log.e(TAG, "doCheck UnsupportedEncodingException" + e);
         }
         return false;
     }
