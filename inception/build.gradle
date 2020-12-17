@@ -29,9 +29,15 @@ android {
 }
 
 dependencies {
+
+    //okgo json kalle
     implementation fileTree('libs')
+    //noinspection GradleCompatible
     implementation 'com.android.support:appcompat-v7:28.0.0'
+    //oaid code  
     implementation project(path: ':oaid_sdk_1.0.23_min_sdk_16')
+
+    //test flavor dependencies
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

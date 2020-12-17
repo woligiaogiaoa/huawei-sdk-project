@@ -109,8 +109,8 @@ public class SDKManager {
 
     public void setApplicationContext(Application application) {
         this.application = application;
-        HuaweiMobileServicesUtil.setApplication(application);
-        Inception.getInstance().setApplication(application);
+        HuaweiMobileServicesUtil.setApplication(application); //huawei api
+        Inception.getInstance().setApplication(application);  //
     }
 
     public void init(Activity activity) {
@@ -118,7 +118,7 @@ public class SDKManager {
         payDelegate=new PayDelegate();
         JosAppsClient appsClient = JosApps.getJosAppsClient(activity);
         appsClient.init();
-        showLog("init success");
+        showToastIfdDebug("init success");
         hasInit = true;
         checkUpdate();
         loadProducts();
@@ -195,7 +195,7 @@ public class SDKManager {
                 String result = "display:" + player.getDisplayName() + "\n" + "playerId:" + player.getPlayerId() + "\n"
                         + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
                         + "playerSign:" + player.getPlayerSign();
-                showLog(result);
+                showToastIfdDebug(result);
                 String playerWhenResume = player.getPlayerId();
                 if(!TextUtils.isEmpty(playerId)){
                     if(!playerId.equals(playerWhenResume)){
@@ -214,7 +214,7 @@ public class SDKManager {
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
                     String result = "rtnCode:" + ((ApiException) e).getStatusCode();
-                    showLog(result);
+                    showToastIfdDebug(result);
                 }
             }
         });
@@ -244,8 +244,8 @@ public class SDKManager {
         authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
             @Override
             public void onSuccess(AuthHuaweiId authHuaweiId) {
-                showLog("signIn success");
-                showLog("display:" + authHuaweiId.getDisplayName());
+                showToastIfdDebug("signIn success");
+                showToastIfdDebug("display:" + authHuaweiId.getDisplayName());
                 SignInCenter.get().updateAuthHuaweiId(authHuaweiId);
                 getCurrentPlayerServerLogin();
             }
@@ -254,8 +254,8 @@ public class SDKManager {
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
                     ApiException apiException = (ApiException) e;
-                    showLog("signIn failed:" + apiException.getStatusCode());
-                    showLog("start getSignInIntent");
+                    showToastIfdDebug("signIn failed:" + apiException.getStatusCode());
+                    showToastIfdDebug("start getSignInIntent");
                     signInNewWay();
                 }
             }
@@ -270,9 +270,7 @@ public class SDKManager {
         activity.startActivityForResult(intent, SIGN_IN_INTENT);
     }
 
-    private HuaweiIdAuthParams getHuaweiIdParams() {
-        return new HuaweiIdAuthParamsHelper(HuaweiIdAuthParams.DEFAULT_AUTH_REQUEST_PARAM_GAME).createParams(); //todo: 待确认：需不需要setIdToken()
-    }
+
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (SIGN_IN_INTENT == requestCode) {
@@ -283,27 +281,27 @@ public class SDKManager {
 
     private void handleSignInResult(Intent data) {
         if (null == data) {
-            showLog("signIn inetnt is null");
+            showToastIfdDebug("signIn inetnt is null");
             return;
         }
         // HuaweiIdSignIn.getSignedInAccountFromIntent(data);
         String jsonSignInResult = data.getStringExtra("HUAWEIID_SIGNIN_RESULT");
         if (TextUtils.isEmpty(jsonSignInResult)) {
-            showLog("SignIn result is empty");
+            showToastIfdDebug("SignIn result is empty");
             return;
         }
         try {
             HuaweiIdAuthResult signInResult = new HuaweiIdAuthResult().fromJson(jsonSignInResult);
             if (0 == signInResult.getStatus().getStatusCode()) {
-                showLog("Sign in success.");
-                showLog("Sign in result: " + signInResult.toJson());
+                showToastIfdDebug("Sign in success.");
+                showToastIfdDebug("Sign in result: " + signInResult.toJson());
                 SignInCenter.get().updateAuthHuaweiId(signInResult.getHuaweiId());
                 login();
             } else {
-                showLog("Sign in failed: " + signInResult.getStatus().getStatusCode());
+                showToastIfdDebug("Sign in failed: " + signInResult.getStatus().getStatusCode());
             }
         } catch (JSONException var7) {
-            showLog("Failed to convert json from signInResult.");
+            showToastIfdDebug("Failed to convert json from signInResult.");
         }
     }
 
@@ -317,7 +315,7 @@ public class SDKManager {
                 String result = "display:" + player.getDisplayName() + "\n" + "playerId:" + player.getPlayerId() + "\n"
                         + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
                         + "playerSign:" + player.getPlayerSign();
-                showLog(result);
+                showToastIfdDebug(result);
                 //playerId = player.getPlayerId();
                 //todo:去sdk后端登录，登陆成功 playerId赋值
                 //gameBegin();
@@ -342,7 +340,7 @@ public class SDKManager {
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
                     String result = "rtnCode:" + ((ApiException) e).getStatusCode();
-                    showLog(result);
+                    showToastIfdDebug(result);
                 }
             }
         });
@@ -355,7 +353,7 @@ public class SDKManager {
      */
     public void gameBegin() {
         if (TextUtils.isEmpty(playerId)) {
-            showLog("GetCurrentPlayer first.");
+            showToastIfdDebug("GetCurrentPlayer first.");
             return;
         }
         String uid = UUID.randomUUID().toString();
@@ -365,24 +363,24 @@ public class SDKManager {
             @Override
             public void onSuccess(String jsonRequest) {
                 if (jsonRequest == null) {
-                    showLog("jsonRequest is null");
+                    showToastIfdDebug("jsonRequest is null");
                     return;
                 }
                 try {
                     JSONObject data = new JSONObject(jsonRequest);
                     sessionId = data.getString("transactionId");
                 } catch (JSONException e) {
-                    showLog("parse jsonArray meet json exception");
+                    showToastIfdDebug("parse jsonArray meet json exception");
                     return;
                 }
-                showLog("submitPlayerEvent traceId: " + jsonRequest);
+                showToastIfdDebug("submitPlayerEvent traceId: " + jsonRequest);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
                     String result = "rtnCode:" + ((ApiException) e).getStatusCode();
-                    showLog(result);
+                    showToastIfdDebug(result);
                 }
             }
         });
@@ -395,11 +393,11 @@ public class SDKManager {
      */
     public void gameEnd() {
         if (TextUtils.isEmpty(playerId)) {
-            showLog("GetCurrentPlayer first.");
+            showToastIfdDebug("GetCurrentPlayer first.");
             return;
         }
         if (TextUtils.isEmpty(sessionId)) {
-            showLog("SessionId is empty.");
+            showToastIfdDebug("SessionId is empty.");
             return;
         }
         PlayersClient client = Games.getPlayersClient(activity);
@@ -407,14 +405,14 @@ public class SDKManager {
         task.addOnSuccessListener(new OnSuccessListener<String>() {
             @Override
             public void onSuccess(String s) {
-                showLog("submitPlayerEvent traceId: " + s);
+                showToastIfdDebug("submitPlayerEvent traceId: " + s);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
                     String result = "rtnCode:" + ((ApiException) e).getStatusCode();
-                    showLog(result);
+                    showToastIfdDebug(result);
                 }
             }
         });
@@ -428,7 +426,7 @@ public class SDKManager {
      */
     public void gamePlayExtra() {
         if (TextUtils.isEmpty(playerId)) {
-            showLog("GetCurrentPlayer first.");
+            showToastIfdDebug("GetCurrentPlayer first.");
             return;
         }
         PlayersClient client = Games.getPlayersClient(activity);
@@ -437,10 +435,10 @@ public class SDKManager {
             @Override
             public void onSuccess(PlayerExtraInfo extra) {
                 if (extra != null) {
-                    showLog("IsRealName: " + extra.getIsRealName() + ", IsAdult: " + extra.getIsAdult() + ", PlayerId: "
+                    showToastIfdDebug("IsRealName: " + extra.getIsRealName() + ", IsAdult: " + extra.getIsAdult() + ", PlayerId: "
                             + extra.getPlayerId() + ", PlayerDuration: " + extra.getPlayerDuration());
                 } else {
-                    showLog("Player extra info is empty.");
+                    showToastIfdDebug("Player extra info is empty.");
                 }
             }
         }).addOnFailureListener(new OnFailureListener() {
@@ -448,7 +446,7 @@ public class SDKManager {
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
                     String result = "rtnCode:" + ((ApiException) e).getStatusCode();
-                    showLog(result);
+                    showToastIfdDebug(result);
                 }
             }
         });
@@ -508,7 +506,7 @@ public class SDKManager {
             if (intent != null) {
                 Serializable info = intent.getSerializableExtra("updatesdk_update_info");
                 if (info instanceof ApkUpgradeInfo) {
-                    sdkManager.showLog("check update success");
+                    sdkManager.showToastIfdDebug("check update success");
                     AppUpdateClient client = JosApps.getAppUpdateClient(sdkManager.activity);
                     /**
                      * show update dialog
@@ -517,7 +515,7 @@ public class SDKManager {
                      */
                     client.showUpdateDialog(sdkManager.activity, (ApkUpgradeInfo) info, false);
                 } else {
-                    sdkManager.showLog("check update failed");
+                    sdkManager.showToastIfdDebug("check update failed");
                 }
             }
         }
@@ -527,28 +525,32 @@ public class SDKManager {
         @Override
         public void onMarketInstallInfo(Intent intent) {
             Log.w("AppUpdateManager", "info not instanceof ApkUpgradeInfo");
-            sdkManager.showLog("check update failed");
+            sdkManager.showToastIfdDebug("check update failed");
         }
 
         // ignored
         // 预留, 无需处理
         @Override
         public void onMarketStoreError(int responseCode) {
-            sdkManager.showLog("check update failed");
+            sdkManager.showToastIfdDebug("check update failed");
         }
 
         // ignored
         // 预留, 无需处理
         @Override
         public void onUpdateStoreError(int responseCode) {
-            sdkManager.showLog("check update failed");
+            sdkManager.showToastIfdDebug("check update failed");
         }
     }
 
     //show toast if debug
-    private void showLog(String result) {
+    private void showToastIfdDebug(String result) {
         if(BuildConfig.DEBUG)
         Toast.makeText(activity, result, Toast.LENGTH_SHORT).show();
+    }
+
+    private HuaweiIdAuthParams getHuaweiIdParams() {
+        return new HuaweiIdAuthParamsHelper(HuaweiIdAuthParams.DEFAULT_AUTH_REQUEST_PARAM_GAME).createParams(); //todo: 待确认：需不需要setIdToken()
     }
 
 

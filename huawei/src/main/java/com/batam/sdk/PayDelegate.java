@@ -138,11 +138,11 @@ public class PayDelegate {
     private void handleOwnedProduct() {
         // 构造一个OwnedPurchasesReq对象
         OwnedPurchasesReq ownedPurchasesReq = new OwnedPurchasesReq();
-// priceType: 0：消耗型商品; 1：非消耗型商品; 2：订阅型商品
+        // priceType: 0：消耗型商品; 1：非消耗型商品; 2：订阅型商品
         ownedPurchasesReq.setPriceType(0);
-// 获取调用接口的Activity对象
+        // 获取调用接口的Activity对象
         Activity activity = SDKManager.getInstance().getActivity();
-// 调用obtainOwnedPurchases接口获取所有已购但未发货的消耗型商品
+        // 调用obtainOwnedPurchases接口获取所有已购但未发货的消耗型商品
         Task<OwnedPurchasesResult> task = Iap.getIapClient(activity).obtainOwnedPurchases(ownedPurchasesReq);
         task.addOnSuccessListener(new OnSuccessListener<OwnedPurchasesResult>() {
             @Override
@@ -182,14 +182,14 @@ public class PayDelegate {
     private void startPay(String storeProductId, String developerPayloadOrderNumber) {
         // 构造一个PurchaseIntentReq对象
         PurchaseIntentReq req = new PurchaseIntentReq();
-// 通过createPurchaseIntent接口购买的商品必须是开发者在AppGallery Connect网站配置的商品。
+        // 通过createPurchaseIntent接口购买的商品必须是开发者在AppGallery Connect网站配置的商品。
         req.setProductId(storeProductId);
-// priceType: 0：消耗型商品; 1：非消耗型商品; 2：订阅型商品
+        // priceType: 0：消耗型商品; 1：非消耗型商品; 2：订阅型商品
         req.setPriceType(0);
         req.setDeveloperPayload(developerPayloadOrderNumber);
-// 获取调用接口的Activity对象
+        // 获取调用接口的Activity对象
         final Activity activity = SDKManager.getInstance().getActivity();
-// 调用createPurchaseIntent接口创建托管商品订单
+        // 调用createPurchaseIntent接口创建托管商品订单
         Task<PurchaseIntentResult> task = Iap.getIapClient(activity).createPurchaseIntent(req);
         task.addOnSuccessListener(new OnSuccessListener<PurchaseIntentResult>() {
             @Override
