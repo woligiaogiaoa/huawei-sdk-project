@@ -308,7 +308,7 @@ public class SDKManager {
     private void getCurrentPlayerServerLogin() { //后端登录
         PlayersClientImpl client = (PlayersClientImpl) Games.getPlayersClient(activity);
 
-        Task<Player> task = client.getCurrentPlayer();
+        Task<Player> task = client.getGamePlayer(true);
         task.addOnSuccessListener(new OnSuccessListener<Player>() {
             @Override
             public void onSuccess(Player player) {
@@ -353,7 +353,7 @@ public class SDKManager {
      */
     public void gameBegin() {
         if (TextUtils.isEmpty(playerId)) {
-            showToastIfdDebug("GetCurrentPlayer first.");
+            showToastIfdDebug("login first.");
             return;
         }
         String uid = UUID.randomUUID().toString();
@@ -393,7 +393,7 @@ public class SDKManager {
      */
     public void gameEnd() {
         if (TextUtils.isEmpty(playerId)) {
-            showToastIfdDebug("GetCurrentPlayer first.");
+            showToastIfdDebug("login first.");
             return;
         }
         if (TextUtils.isEmpty(sessionId)) {
@@ -426,7 +426,7 @@ public class SDKManager {
      */
     public void gamePlayExtra() {
         if (TextUtils.isEmpty(playerId)) {
-            showToastIfdDebug("GetCurrentPlayer first.");
+            showToastIfdDebug("login first.");
             return;
         }
         PlayersClient client = Games.getPlayersClient(activity);
