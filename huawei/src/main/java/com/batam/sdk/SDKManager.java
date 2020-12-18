@@ -188,7 +188,7 @@ public class SDKManager {
     private void checkPlayer() {
         PlayersClientImpl client = (PlayersClientImpl) Games.getPlayersClient(activity);
 
-        Task<Player> task = client.getCurrentPlayer();
+        Task<Player> task = client.getGamePlayer(true);
         task.addOnSuccessListener(new OnSuccessListener<Player>() {
             @Override
             public void onSuccess(Player player) {
