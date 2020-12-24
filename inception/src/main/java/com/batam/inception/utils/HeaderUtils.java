@@ -24,6 +24,10 @@ public class HeaderUtils {
                         androidQ.setOaid(idSupplier.getOAID());
                         androidQ.setAaid(idSupplier.getAAID());
                         androidQ.setVaid(idSupplier.getVAID());
+                        String msg="oaid: " + idSupplier.getOAID();
+                        String msg1="aaid: " + idSupplier.getAAID();
+                        String msg2="vaid: " + idSupplier.getVAID();
+                        Log.e("hahahaid",msg+msg1+msg2);
                         SdkConfig.get().setAndroidQ(androidQ); //把AndroidQ写进sp
                     }
                     updateDeviceInfoHeader(context);//从sp取出AndroidQ，然后得到http请求头info，写进sp
