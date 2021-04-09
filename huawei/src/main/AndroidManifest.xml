@@ -4,4 +4,10 @@
     <meta-data
         android:name="com.huawei.hms.client.channel.androidMarket"
         android:value="false" />
+
+    <queries>
+        <intent>
+            <action android:name="com.huawei.hms.core.aidlservice" />
+        </intent>
+    </queries>
 </manifest>

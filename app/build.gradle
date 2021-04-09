@@ -5,7 +5,7 @@ android {
     buildToolsVersion "30.0.1"
 
     defaultConfig {
-        applicationId "com.jsn.sdmary"
+        applicationId "com.jiuwan.mlbbjx.huawei"
         minSdkVersion 19
         targetSdkVersion 30
         versionCode 1
@@ -23,7 +23,6 @@ android {
             keyAlias 'key0'
             keyPassword '2s#PGui36euOspq4'
 
-            v2SigningEnabled false
         }
     }
 

@@ -1,5 +1,12 @@
 package com.batam.sdk;
 
 public interface Userlistener {
-    public void forceSignInFromScratch();
+
+    void onUserSwitchAccount();
+
+    void onLoginSuccess(String userInfo);
+
+    void onLoginError(String message);
+
+    void onLogout();
 }

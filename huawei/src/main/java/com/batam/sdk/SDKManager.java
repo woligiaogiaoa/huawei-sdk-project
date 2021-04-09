@@ -2,6 +2,7 @@ package com.batam.sdk;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
@@ -9,7 +10,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.batam.inception.Inception;
+import com.batam.sdk.util.SignInCenter;
 import com.huawei.hmf.tasks.OnCompleteListener;
 import com.huawei.hmf.tasks.OnFailureListener;
 import com.huawei.hmf.tasks.OnSuccessListener;
@@ -54,7 +55,7 @@ public class SDKManager {
     private final static int HEARTBEAT_TIME = BuildConfig.DEBUG? 5000 :15 * 60 * 1000; //测试环境下5秒
 
 
-    private String playerId;
+    private String playerId; //use openid
 
     private String slug; //是否登录到后端
 
@@ -81,6 +82,10 @@ public class SDKManager {
     }
 
     private SDKManager() {
+    }
+
+    private void setPlayId(String openId){
+        playerId=openId;
     }
 
     public static SDKManager getInstance() {
@@ -110,7 +115,6 @@ public class SDKManager {
     public void setApplicationContext(Application application) {
         this.application = application;
         HuaweiMobileServicesUtil.setApplication(application); //huawei api
-        Inception.getInstance().setApplication(application);  //
     }
 
     public void init(Activity activity) {
@@ -186,6 +190,7 @@ public class SDKManager {
     }
 
     private void checkPlayer() {
+        if(TextUtils.isEmpty(playerId)) return;
         PlayersClientImpl client = (PlayersClientImpl) Games.getPlayersClient(activity);
 
         Task<Player> task = client.getGamePlayer(true);
@@ -194,26 +199,25 @@ public class SDKManager {
             public void onSuccess(Player player) {
                 String result = "display:" + player.getDisplayName() + "\n" + "playerId:" + player.getPlayerId() + "\n"
                         + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
-                        + "playerSign:" + player.getPlayerSign();
+                        + "playerSign:" + player.getPlayerSign()
+                        ;
                 showToastIfdDebug(result);
-                String playerWhenResume = player.getPlayerId();
+                String playerWhenResume = player.getOpenId();
+                Log.e(TAG, "resume openid:"+player.getOpenId() +"\n"+"original playerid:" +playerId );
                 if(!TextUtils.isEmpty(playerId)){
                     if(!playerId.equals(playerWhenResume)){
                         if(userlistener!=null){
                             logout();
-                            userlistener.forceSignInFromScratch(); //
-
+                            userlistener.onUserSwitchAccount(); //
                         }
-
                     }
                 }
-
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
-                    String result = "rtnCode:" + ((ApiException) e).getStatusCode();
+                    String result = "checkplayer fail rtnCode:" + ((ApiException) e).getStatusCode();
                     showToastIfdDebug(result);
                 }
             }
@@ -221,13 +225,14 @@ public class SDKManager {
     }
 
     public void onDestroy() {
-        logout();
+        //logout();
         Log.e(TAG, "onDestroy");
     }
 
     public void logout(){
         gameEnd();
         playerId=null; //sdk逻辑上的退出，不用管华为的。强制重新登陆。
+        userlistener.onLogout();
         Task<Void> huaweiLogoutTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).signOut();
         huaweiLogoutTask.addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
@@ -239,7 +244,7 @@ public class SDKManager {
     }
 
 
-    public void login() {
+    public void login(Context context) {
         Task<AuthHuaweiId> authHuaweiIdTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).silentSignIn();
         authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
             @Override
@@ -257,6 +262,9 @@ public class SDKManager {
                     showToastIfdDebug("signIn failed:" + apiException.getStatusCode());
                     showToastIfdDebug("start getSignInIntent");
                     signInNewWay();
+                }
+                else {
+                   userlistener.onLoginError(e.getMessage());
                 }
             }
         });
@@ -296,7 +304,7 @@ public class SDKManager {
                 showToastIfdDebug("Sign in success.");
                 showToastIfdDebug("Sign in result: " + signInResult.toJson());
                 SignInCenter.get().updateAuthHuaweiId(signInResult.getHuaweiId());
-                login();
+                login(activity);
             } else {
                 showToastIfdDebug("Sign in failed: " + signInResult.getStatus().getStatusCode());
             }
@@ -312,14 +320,23 @@ public class SDKManager {
         task.addOnSuccessListener(new OnSuccessListener<Player>() {
             @Override
             public void onSuccess(Player player) {
-                String result = "display:" + player.getDisplayName() + "\n" + "playerId:" + player.getPlayerId() + "\n"
+                String result = "playerId:" + player.getPlayerId() + "\n"
                         + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
                         + "playerSign:" + player.getPlayerSign();
                 showToastIfdDebug(result);
+                Log.e("gamePlayersign:",player.getPlayerSign().length()+"##"+player.getPlayerSign());
+                        Log.e("gamePlayer",  "displayname:" + player.getDisplayName() + "\n"
+                        +"uninonId:" + player.getUnionId() + "\n"+
+                        "openid:" + player.getOpenId() + "\n"+
+                        "accesstoken:" + player.getAccessToken() + "\n" +result);
                 //playerId = player.getPlayerId();
                 //todo:去sdk后端登录，登陆成功 playerId赋值
                 //gameBegin();
                 //这些也要登陆成功去调用
+                playerId=player.getOpenId();
+                userlistener.onLoginSuccess(playerId);
+                gameBegin();
+
                 handler = new Handler() {
                     @Override
                     public void handleMessage(Message msg) {
@@ -342,6 +359,7 @@ public class SDKManager {
                     String result = "rtnCode:" + ((ApiException) e).getStatusCode();
                     showToastIfdDebug(result);
                 }
+                userlistener.onLoginError(e.getMessage());
             }
         });
     }
@@ -394,6 +412,7 @@ public class SDKManager {
     public void gameEnd() {
         if (TextUtils.isEmpty(playerId)) {
             showToastIfdDebug("login first.");
+            sessionId=null;
             return;
         }
         if (TextUtils.isEmpty(sessionId)) {
@@ -445,7 +464,7 @@ public class SDKManager {
             @Override
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
-                    String result = "rtnCode:" + ((ApiException) e).getStatusCode();
+                    String result = "gamePlayExtra rtnCode:" + ((ApiException) e).getStatusCode();
                     showToastIfdDebug(result);
                 }
             }
