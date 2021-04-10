@@ -109,7 +109,7 @@ public class PayDelegate {
             PurchaseResultInfo purchaseResultInfo = Iap.getIapClient(SDKManager.getInstance().getActivity()).parsePurchaseResultInfoFromIntent(data);
             switch(purchaseResultInfo.getReturnCode()) {
                 case OrderStatusCode.ORDER_STATE_SUCCESS:
-                    consumeOwnedPurchase(SDKManager.getInstance().getActivity(), purchaseResultInfo.getInAppPurchaseData());
+                    //consumeOwnedPurchase(SDKManager.getInstance().getActivity(), purchaseResultInfo.getInAppPurchaseData());
                     Log.e(TAG,"inapppurchasedata"+purchaseResultInfo.getInAppPurchaseData());
                     Log.e(TAG,"inapppurchasesignature"+purchaseResultInfo.getInAppDataSignature());
                     //fixme:支付成功之后，给服务器发订单接口调用成功才消耗
@@ -123,7 +123,7 @@ public class PayDelegate {
                     Toast.makeText(SDKManager.getInstance().getActivity(), "你有订单尚未处理，正在为您处理", Toast.LENGTH_SHORT).show();
                     // you can check if the user has purchased the product and decide whether to provide goods
                     // if the purchase is a consumable product, consuming the purchase and deliver product
-                    handleOwnedProduct();
+                    //handleOwnedProduct();
                     return;
 
                 default:
