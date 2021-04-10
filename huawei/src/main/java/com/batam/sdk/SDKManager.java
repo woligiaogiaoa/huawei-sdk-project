@@ -30,6 +30,7 @@ import com.huawei.hms.jos.games.PlayersClient;
 import com.huawei.hms.jos.games.player.Player;
 import com.huawei.hms.jos.games.player.PlayerExtraInfo;
 import com.huawei.hms.jos.games.player.PlayersClientImpl;
+import com.huawei.hms.support.account.AccountAuthManager;
 import com.huawei.hms.support.hwid.HuaweiIdAuthManager;
 import com.huawei.hms.support.hwid.request.HuaweiIdAuthParams;
 import com.huawei.hms.support.hwid.request.HuaweiIdAuthParamsHelper;
@@ -52,7 +53,7 @@ public class SDKManager {
 
     private static final String TAG = SDKManager.class.getSimpleName();
     private final static int SIGN_IN_INTENT = 3000;
-    private final static int HEARTBEAT_TIME = BuildConfig.DEBUG? 5000 :15 * 60 * 1000; //测试环境下5秒
+    private final static int HEARTBEAT_TIME = /*BuildConfig.DEBUG? 5000 :*/11 * 60 * 1000; //测试环境下5秒
 
 
     private String playerId; //use openid
@@ -122,7 +123,7 @@ public class SDKManager {
         payDelegate=new PayDelegate();
         JosAppsClient appsClient = JosApps.getJosAppsClient(activity);
         appsClient.init();
-        showToastIfdDebug("init success");
+        //showToastIfdDebug("init success");
         hasInit = true;
         checkUpdate();
         loadProducts();
@@ -185,7 +186,7 @@ public class SDKManager {
     public void onResume() {
         showFloatWindowNewWay();
         //fixme:check player
-        checkPlayer();
+       // checkPlayer();
         Log.e(TAG, "onResume");
     }
 
@@ -201,7 +202,7 @@ public class SDKManager {
                         + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
                         + "playerSign:" + player.getPlayerSign()
                         ;
-                showToastIfdDebug(result);
+                //showToastIfdDebug(result);
                 String playerWhenResume = player.getOpenId();
                 Log.e(TAG, "resume openid:"+player.getOpenId() +"\n"+"original playerid:" +playerId );
                 if(!TextUtils.isEmpty(playerId)){
@@ -225,7 +226,6 @@ public class SDKManager {
     }
 
     public void onDestroy() {
-        //logout();
         Log.e(TAG, "onDestroy");
     }
 
@@ -249,8 +249,8 @@ public class SDKManager {
         authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
             @Override
             public void onSuccess(AuthHuaweiId authHuaweiId) {
-                showToastIfdDebug("signIn success");
-                showToastIfdDebug("display:" + authHuaweiId.getDisplayName());
+                //showToastIfdDebug("signIn success");
+                //showToastIfdDebug("display:" + authHuaweiId.getDisplayName());
                 SignInCenter.get().updateAuthHuaweiId(authHuaweiId);
                 getCurrentPlayerServerLogin();
             }
@@ -259,8 +259,8 @@ public class SDKManager {
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
                     ApiException apiException = (ApiException) e;
-                    showToastIfdDebug("signIn failed:" + apiException.getStatusCode());
-                    showToastIfdDebug("start getSignInIntent");
+                    //showToastIfdDebug("signIn failed:" + apiException.getStatusCode());
+                    showToastIfdDebug("start silentSignIn getSignInIntent");
                     signInNewWay();
                 }
                 else {
@@ -290,25 +290,29 @@ public class SDKManager {
     private void handleSignInResult(Intent data) {
         if (null == data) {
             showToastIfdDebug("signIn inetnt is null");
+            userlistener.onLoginError("SignIn result is null");
             return;
         }
         // HuaweiIdSignIn.getSignedInAccountFromIntent(data);
         String jsonSignInResult = data.getStringExtra("HUAWEIID_SIGNIN_RESULT");
         if (TextUtils.isEmpty(jsonSignInResult)) {
             showToastIfdDebug("SignIn result is empty");
+            userlistener.onLoginError("SignIn result is empty");
             return;
         }
         try {
             HuaweiIdAuthResult signInResult = new HuaweiIdAuthResult().fromJson(jsonSignInResult);
             if (0 == signInResult.getStatus().getStatusCode()) {
-                showToastIfdDebug("Sign in success.");
+                //showToastIfdDebug("Sign in success.");
                 showToastIfdDebug("Sign in result: " + signInResult.toJson());
                 SignInCenter.get().updateAuthHuaweiId(signInResult.getHuaweiId());
                 login(activity);
             } else {
+                userlistener.onLoginError("Sign in failed: " + signInResult.getStatus().getStatusCode());
                 showToastIfdDebug("Sign in failed: " + signInResult.getStatus().getStatusCode());
             }
         } catch (JSONException var7) {
+            userlistener.onLoginError("Sign in failed: " + "Failed to convert json from signInResult.");
             showToastIfdDebug("Failed to convert json from signInResult.");
         }
     }
@@ -323,20 +327,18 @@ public class SDKManager {
                 String result = "playerId:" + player.getPlayerId() + "\n"
                         + "playerLevel:" + player.getLevel() + "\n" + "timestamp:" + player.getSignTs() + "\n"
                         + "playerSign:" + player.getPlayerSign();
-                showToastIfdDebug(result);
-                Log.e("gamePlayersign:",player.getPlayerSign().length()+"##"+player.getPlayerSign());
+                //showToastIfdDebug(result);
+                Log.e("gamePlayersign:",
+                        player.getPlayerSign().length()+"##"+player.getPlayerSign());
                         Log.e("gamePlayer",  "displayname:" + player.getDisplayName() + "\n"
                         +"uninonId:" + player.getUnionId() + "\n"+
                         "openid:" + player.getOpenId() + "\n"+
                         "accesstoken:" + player.getAccessToken() + "\n" +result);
-                //playerId = player.getPlayerId();
-                //todo:去sdk后端登录，登陆成功 playerId赋值
-                //gameBegin();
-                //这些也要登陆成功去调用
-                playerId=player.getOpenId();
+                playerId=player.getPlayerId();
+                //todo：should  called after server login
                 userlistener.onLoginSuccess(playerId);
                 gameBegin();
-
+                //todo :server login enter game
                 handler = new Handler() {
                     @Override
                     public void handleMessage(Message msg) {
@@ -356,7 +358,7 @@ public class SDKManager {
             @Override
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
-                    String result = "rtnCode:" + ((ApiException) e).getStatusCode();
+                    String result = "getcurrent player and server login rtnCode:" + ((ApiException) e).getStatusCode();
                     showToastIfdDebug(result);
                 }
                 userlistener.onLoginError(e.getMessage());
@@ -371,7 +373,8 @@ public class SDKManager {
      */
     public void gameBegin() {
         if (TextUtils.isEmpty(playerId)) {
-            showToastIfdDebug("login first.");
+            Log.e(TAG, "gameBegin: begine not login");
+            showToastIfdDebug("game begin event error: not login.");
             return;
         }
         String uid = UUID.randomUUID().toString();
@@ -381,23 +384,25 @@ public class SDKManager {
             @Override
             public void onSuccess(String jsonRequest) {
                 if (jsonRequest == null) {
-                    showToastIfdDebug("jsonRequest is null");
+                    showToastIfdDebug("game begin event error: jsonRequest is null");
                     return;
                 }
                 try {
                     JSONObject data = new JSONObject(jsonRequest);
                     sessionId = data.getString("transactionId");
+                    showToastIfdDebug("game begin event OKK session id is:"+ sessionId);
                 } catch (JSONException e) {
-                    showToastIfdDebug("parse jsonArray meet json exception");
+                    showToastIfdDebug("game begin event error:+parse jsonArray meet json exception");
                     return;
                 }
-                showToastIfdDebug("submitPlayerEvent traceId: " + jsonRequest);
+                Log.e(TAG, "game begin event: submitPlayerEvent traceId: " + jsonRequest);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
-                    String result = "rtnCode:" + ((ApiException) e).getStatusCode();
+                    String result = "game begin event error: rtnCode:" + ((ApiException) e).getStatusCode();
+                    //todo deal with code
                     showToastIfdDebug(result);
                 }
             }
@@ -411,12 +416,11 @@ public class SDKManager {
      */
     public void gameEnd() {
         if (TextUtils.isEmpty(playerId)) {
-            showToastIfdDebug("login first.");
-            sessionId=null;
+            showToastIfdDebug("game end event error: not login.");
             return;
         }
         if (TextUtils.isEmpty(sessionId)) {
-            showToastIfdDebug("SessionId is empty.");
+            showToastIfdDebug("game end event error: SessionId is empty.");
             return;
         }
         PlayersClient client = Games.getPlayersClient(activity);
@@ -424,7 +428,7 @@ public class SDKManager {
         task.addOnSuccessListener(new OnSuccessListener<String>() {
             @Override
             public void onSuccess(String s) {
-                showToastIfdDebug("submitPlayerEvent traceId: " + s);
+                showToastIfdDebug("game end event okk :submitPlayerEvent traceId: " + s);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -435,7 +439,6 @@ public class SDKManager {
                 }
             }
         });
-        sessionId=null;
     }
 
     /**
@@ -445,7 +448,7 @@ public class SDKManager {
      */
     public void gamePlayExtra() {
         if (TextUtils.isEmpty(playerId)) {
-            showToastIfdDebug("login first.");
+            showToastIfdDebug("query gamePlayExtra Error: not login .");
             return;
         }
         PlayersClient client = Games.getPlayersClient(activity);
@@ -457,14 +460,14 @@ public class SDKManager {
                     showToastIfdDebug("IsRealName: " + extra.getIsRealName() + ", IsAdult: " + extra.getIsAdult() + ", PlayerId: "
                             + extra.getPlayerId() + ", PlayerDuration: " + extra.getPlayerDuration());
                 } else {
-                    showToastIfdDebug("Player extra info is empty.");
+                    showToastIfdDebug("query gamePlayExtra Error: Player extra info is empty.");
                 }
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(Exception e) {
                 if (e instanceof ApiException) {
-                    String result = "gamePlayExtra rtnCode:" + ((ApiException) e).getStatusCode();
+                    String result = "gamePlayExtra error:rtnCode:" + ((ApiException) e).getStatusCode();
                     showToastIfdDebug(result);
                 }
             }
@@ -525,7 +528,7 @@ public class SDKManager {
             if (intent != null) {
                 Serializable info = intent.getSerializableExtra("updatesdk_update_info");
                 if (info instanceof ApkUpgradeInfo) {
-                    sdkManager.showToastIfdDebug("check update success");
+                    //sdkManager.showToastIfdDebug("check update success");
                     AppUpdateClient client = JosApps.getAppUpdateClient(sdkManager.activity);
                     /**
                      * show update dialog
@@ -534,7 +537,7 @@ public class SDKManager {
                      */
                     client.showUpdateDialog(sdkManager.activity, (ApkUpgradeInfo) info, false);
                 } else {
-                    sdkManager.showToastIfdDebug("check update failed");
+                    //sdkManager.showToastIfdDebug("check update failed");
                 }
             }
         }

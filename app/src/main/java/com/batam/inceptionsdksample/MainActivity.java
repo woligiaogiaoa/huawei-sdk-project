@@ -50,7 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onLogout() {
-                // 主动调用sdk的 这个方法，或者是用户切换了账号
+                gaming.setValue(false);
+                logining.setValue(false);
             }
         });
     }
@@ -118,11 +119,16 @@ public class MainActivity extends AppCompatActivity {
     public void switch1(View view) {
 
         SDKManager.getInstance().logout();
+        gaming.setValue(false); //退出游戏
         logining.setValue(true);
         SDKManager.getInstance().login(this);
     }
 
     public void pay(View view) {
-        SDKManager.getInstance().pay("test_product_001","test123");
+        SDKManager.getInstance().pay("test01","test123456ABC");
+    }
+
+    public void logout(View view) {
+        SDKManager.getInstance().logout();
     }
 }

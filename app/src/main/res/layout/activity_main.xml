@@ -30,5 +30,15 @@
         android:layout_height="wrap_content"
         android:text="switch account" />
 
+    android:text="pay" />
+
+    <Button
+        android:layout_marginTop="20dp"
+        android:id="@+id/bt_logout"
+        android:onClick="logout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="logout" />
+
 
 </LinearLayout>
