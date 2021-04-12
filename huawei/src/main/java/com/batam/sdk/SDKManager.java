@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.batam.sdk.data.data.DeviceUtils;
 import com.batam.sdk.util.SignInCenter;
 import com.huawei.hmf.tasks.OnCompleteListener;
 import com.huawei.hmf.tasks.OnFailureListener;
@@ -30,7 +31,6 @@ import com.huawei.hms.jos.games.PlayersClient;
 import com.huawei.hms.jos.games.player.Player;
 import com.huawei.hms.jos.games.player.PlayerExtraInfo;
 import com.huawei.hms.jos.games.player.PlayersClientImpl;
-import com.huawei.hms.support.account.AccountAuthManager;
 import com.huawei.hms.support.hwid.HuaweiIdAuthManager;
 import com.huawei.hms.support.hwid.request.HuaweiIdAuthParams;
 import com.huawei.hms.support.hwid.request.HuaweiIdAuthParamsHelper;
@@ -116,6 +116,7 @@ public class SDKManager {
     public void setApplicationContext(Application application) {
         this.application = application;
         HuaweiMobileServicesUtil.setApplication(application); //huawei api
+        DeviceUtils.setApp(application);
     }
 
     public void init(Activity activity) {
