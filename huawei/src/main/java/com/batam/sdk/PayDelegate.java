@@ -112,7 +112,7 @@ public class PayDelegate {
                     //consumeOwnedPurchase(SDKManager.getInstance().getActivity(), purchaseResultInfo.getInAppPurchaseData());
                     Log.e(TAG,"inapppurchasedata"+purchaseResultInfo.getInAppPurchaseData());
                     Log.e(TAG,"inapppurchasesignature"+purchaseResultInfo.getInAppDataSignature());
-                    //fixme:支付成功之后，给服务器发订单接口调用成功才消耗
+                    //todo:在服务端验签发货并消耗
                     return;
                 case OrderStatusCode.ORDER_STATE_CANCEL:
                     // The User cancels payment.
