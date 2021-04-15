@@ -364,6 +364,7 @@ public class SDKManager {
                     public void onSuccess(Response<LzyResponse<SlugBean>> response) {
                         if(response.body()!=null & response.body().data!=null){
                             SlugBean data = response.body().data;
+                            payDelegate.handleOwnedProduct();
                             userlistener.onLoginSuccess(data.getSlug());
                         }
                         else {
