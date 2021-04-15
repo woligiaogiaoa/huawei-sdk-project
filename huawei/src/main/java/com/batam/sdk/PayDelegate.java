@@ -4,15 +4,17 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.nfc.Tag;
-import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.batam.sdk.data.pay.OrderNumberBean;
+import com.batam.sdk.data.pay.HuaweiPayParam;
+import com.batam.sdk.http.JsonCallback;
+import com.batam.sdk.http.LzyResponse;
+import com.batam.sdk.http.SimpleResponse;
+import com.batam.sdk.util.OrderUtil;
 import com.huawei.hmf.tasks.OnFailureListener;
 import com.huawei.hmf.tasks.OnSuccessListener;
 import com.huawei.hmf.tasks.Task;
@@ -31,11 +33,13 @@ import com.huawei.hms.iap.entity.PurchaseIntentResult;
 import com.huawei.hms.iap.entity.PurchaseResultInfo;
 import com.huawei.hms.iap.util.IapClientHelper;
 import com.huawei.hms.support.api.client.Status;
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.model.Response;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -43,6 +47,9 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.TreeMap;
+
+import static com.batam.sdk.SDKManager.ORDER_CREATE;
 
 public class PayDelegate {
 
@@ -50,6 +57,75 @@ public class PayDelegate {
    // private final String PAY_KEY="MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAlhOL2g5fxK4IrfGUzSKLxG0h4iLC8DcFNiRw4jUs/s0SeZPAg0duUzyjNzEsylQkHeb991ImpJjCg6L1KGQWbBJm1YSemlKwF3SWNVvdfW3x6qQryjUaAe3LYfe0xXTrtPiVPTswZj5Yqs5SqsMchcxAm9r9Cs2E/S2S1VHmiCziLGIrwz5Dvek5xT0ODKYGaFsi62QvNIJtVDJN5fWHAz7ASg4YkVQeTv2NWe/DZBvmKexkMUozmvNUQU+mqY3NV8Jup6yF+GvBCK83LtQmrq1AYciYldxUKLCQVdQZHmXhQrhRU0Ui2LFbcPhSpOPvOsW0TfVUG0l0HsGe7n0H9H2gJfQzsOtfr5UscJ/jtviYzOKkGfJ3k/NEhMUXQTrnAEUxchTL58v2vb16RJkb3Hyv/vUtSm3dCbF5fYKW5hkq5MbsIoVG0IP8rc13akjmvVAZveUxltIqkKehVg10nletkW0C8Cx5Pw8BgpU/fEgK9PQ21yKKljUyAt3uAwRJAgMBAAE=";
     private final int REQ_CODE_BUY=10001;
     private final int REQ_CODE_LOGIN=10002;
+
+
+    public void h5OrderJsonPay(String orderJson){ //需要游戏传过来 huawei 的 productId
+        try {
+            JSONObject jsonObject = new JSONObject(orderJson);
+            String gameNum = jsonObject.optString("game_num", "");
+            String amount = jsonObject.optString("value", "");
+            //String slug = jsonObject.optString("slug", "");
+            String productName = jsonObject.optString("props_name", "");
+            String roleName = jsonObject.optString("role_name", "");
+            String roleId = jsonObject.optString("role_id", "");
+            String serverId = jsonObject.optString("server_id", "");
+            String serverName = jsonObject.optString("server_name", "");
+                String productID = jsonObject.optString("productID", "-1");
+            String callbackUrl = jsonObject.optString("callback_url", "");
+            String extendData = jsonObject.optString("extend_data", "");
+            HuaweiPayParam huaweiPayParam = new HuaweiPayParam.Builder()
+                    .gameOrderNum(gameNum)
+                    .price(amount)
+                    .productName(productName)
+                    .roleName(roleName)
+                    .roleID(roleId)
+                    .serverID(serverId)
+                    .serverName(serverName)
+                    .callbackUrl(callbackUrl)
+                    .productId(productID)
+                    .extendData(extendData)
+                    .build();
+            paramsPay(huaweiPayParam);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void paramsPay(HuaweiPayParam platformPayParam) {
+        Log.e(TAG, "paramsPay: "+platformPayParam.toString() );
+        TreeMap paramsMap =  new TreeMap<String, String>();
+        paramsMap.put("game_num", platformPayParam.getGameOrderNum());
+        paramsMap.put("value",platformPayParam.getPrice()); //分
+        paramsMap.put("props_name",platformPayParam.getProductName());
+        paramsMap.put("callback_url",platformPayParam.getCallbackUrl());
+        paramsMap.put("extend_data",platformPayParam.getExtendData());
+        paramsMap.put("server_id",platformPayParam.getServerID());
+        paramsMap.put("server_name",platformPayParam.getServerName());
+        paramsMap.put("role_id",platformPayParam.getRoleID());
+        paramsMap.put("role_name",platformPayParam.getRoleName());
+        paramsMap.put("sign",OrderUtil.encryptPaySign(SDKManager.getInstance().getActivity(), paramsMap));
+        //platformPayParam.price=fen2yuan(platformPayParam.price) //price String ext :6.00
+        //mainActivity?.showProgress("")
+        String inAppProductId=    "test01" ;           //platformPayParam.productId; //todo:匹配华为的 product id
+        OkGo.<LzyResponse<OrderNumberBean>>post(ORDER_CREATE)
+                .tag(ORDER_CREATE)
+                .params(paramsMap)
+                .execute(new JsonCallback<LzyResponse<OrderNumberBean>>() {
+                    @Override
+                    public void onSuccess(Response<LzyResponse<OrderNumberBean>> response) {
+                        if(response.body()!=null && response.body().data!=null){
+                            OrderNumberBean data = response.body().data;
+                            checkPayEnvAndMaybePay(inAppProductId,data.getNumber());
+                        }
+                    }
+
+                    @Override
+                    public void onError(String errorMsg, int code) {
+                        Toast.makeText(
+                        SDKManager.getInstance().getApplication(),errorMsg,Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
 
     public void pay(String storeProductId,String developerPayloadOrderNumber){
         checkPayEnvAndMaybePay(storeProductId,developerPayloadOrderNumber);
@@ -106,13 +182,32 @@ public class PayDelegate {
                 Toast.makeText(SDKManager.getInstance().getActivity(), "error", Toast.LENGTH_SHORT).show();
                 return;
             }
-            PurchaseResultInfo purchaseResultInfo = Iap.getIapClient(SDKManager.getInstance().getActivity()).parsePurchaseResultInfoFromIntent(data);
+            PurchaseResultInfo purchaseResultInfo = Iap.getIapClient(
+                    SDKManager.getInstance().getActivity()).parsePurchaseResultInfoFromIntent(data);
             switch(purchaseResultInfo.getReturnCode()) {
                 case OrderStatusCode.ORDER_STATE_SUCCESS:
                     //consumeOwnedPurchase(SDKManager.getInstance().getActivity(), purchaseResultInfo.getInAppPurchaseData());
+
                     Log.e(TAG,"inapppurchasedata"+purchaseResultInfo.getInAppPurchaseData());
                     Log.e(TAG,"inapppurchasesignature"+purchaseResultInfo.getInAppDataSignature());
                     //todo:在服务端验签发货并消耗
+                    try {
+                        JSONObject jsonObject=new JSONObject(purchaseResultInfo.getInAppPurchaseData());
+                        SDKManager.deliverProduct(jsonObject.getString("purchaseToken"),
+                                jsonObject.getString("productId"),
+                                jsonObject.getString("developerPayload"),
+                                new JsonCallback<SimpleResponse>() {
+                                    @Override
+                                    public void onSuccess(Response<SimpleResponse> response) {
+                                        if(response.body()!=null && response.body().code==0){
+                                            consumeOwnedPurchase(SDKManager.getInstance().getActivity(),
+                                                    purchaseResultInfo.getInAppPurchaseData());
+                                        }
+                                    }
+                                });
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                     return;
                 case OrderStatusCode.ORDER_STATE_CANCEL:
                     // The User cancels payment.
@@ -135,7 +230,7 @@ public class PayDelegate {
 
     }
 
-    private void handleOwnedProduct() {
+    public void handleOwnedProduct() {
         // 构造一个OwnedPurchasesReq对象
         OwnedPurchasesReq ownedPurchasesReq = new OwnedPurchasesReq();
         // priceType: 0：消耗型商品; 1：非消耗型商品; 2：订阅型商品
@@ -157,9 +252,22 @@ public class PayDelegate {
                         try {
                             InAppPurchaseData inAppPurchaseDataBean = new InAppPurchaseData(inAppPurchaseData);
                             int purchaseState = inAppPurchaseDataBean.getPurchaseState();
-                            //todo:验签，发货，消耗
-                            consumeOwnedPurchase(SDKManager.getInstance().getActivity(), inAppPurchaseData);
+                            JSONObject jsonObject=new JSONObject(inAppPurchaseData);
+                            SDKManager.deliverProduct(jsonObject.getString("purchaseToken"),
+                                    jsonObject.getString("productId"),
+                                    jsonObject.getString("developerPayload"),
+                                    new JsonCallback<SimpleResponse>() {
+                                        @Override
+                                        public void onSuccess(Response<SimpleResponse> response) {
+                                            if(response.body()!=null && response.body().code==0){
+                                                consumeOwnedPurchase(SDKManager.getInstance().getActivity(),
+                                                       inAppPurchaseData);
+                                            }
+                                        }
+                                    });
                             Log.e(TAG,"inapppurchasedata"+inAppPurchaseData.toString());
+                            //consumeOwnedPurchase(SDKManager.getInstance().getActivity(),inAppPurchaseData);
+                            throw new JSONException("");
                         } catch (JSONException e) {
                         }
                     }
@@ -237,7 +345,7 @@ public class PayDelegate {
      * Consume the unconsumed purchase with type 0 after successfully delivering the product, then the Huawei payment server will update the order status and the user can purchase the product again.
      * @param inAppPurchaseData JSON string that contains purchase order details.
      */
-    private void consumeOwnedPurchase(final Context context, String inAppPurchaseData) {
+    public void consumeOwnedPurchase(final Context context, String inAppPurchaseData) {
         Log.i(TAG, "call consumeOwnedPurchase");
         IapClient mClient = Iap.getIapClient(context);
         Task<ConsumeOwnedPurchaseResult> task = mClient.consumeOwnedPurchase(createConsumeOwnedPurchaseReq(inAppPurchaseData));

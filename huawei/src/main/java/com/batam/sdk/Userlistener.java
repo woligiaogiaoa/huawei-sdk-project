@@ -4,7 +4,7 @@ public interface Userlistener {
 
     void onUserSwitchAccount();
 
-    void onLoginSuccess(String userInfo);
+    void onLoginSuccess(String uid);
 
     void onLoginError(String message);
 

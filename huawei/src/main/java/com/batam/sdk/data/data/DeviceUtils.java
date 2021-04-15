@@ -58,6 +58,7 @@ import java.util.logging.Level;
 import okhttp3.OkHttpClient;
 
 
+/*耦合okgo oaid sdk ,oaid sdk 耦合 一个asset 下的json格式的文件  ：supplierconfig.json */
 @SuppressLint("MissingPermission")
 public class DeviceUtils {
 

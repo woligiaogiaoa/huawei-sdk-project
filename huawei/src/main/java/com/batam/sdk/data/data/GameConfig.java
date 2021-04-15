@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/*耦合 OKgo gson , asset 下的config。json*/
 public class GameConfig {
     public static final String JSON_FILE_NAME = "config.json";
 

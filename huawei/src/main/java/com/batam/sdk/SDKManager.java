@@ -11,6 +11,11 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.batam.sdk.data.data.DeviceUtils;
+import com.batam.sdk.data.login.SlugBean;
+import com.batam.sdk.data.pay.HuaweiPayParam;
+import com.batam.sdk.http.JsonCallback;
+import com.batam.sdk.http.LzyResponse;
+import com.batam.sdk.http.SimpleResponse;
 import com.batam.sdk.util.SignInCenter;
 import com.huawei.hmf.tasks.OnCompleteListener;
 import com.huawei.hmf.tasks.OnFailureListener;
@@ -38,6 +43,8 @@ import com.huawei.hms.support.hwid.result.AuthHuaweiId;
 import com.huawei.hms.support.hwid.result.HuaweiIdAuthResult;
 import com.huawei.updatesdk.service.appmgr.bean.ApkUpgradeInfo;
 import com.huawei.updatesdk.service.otaupdate.CheckUpdateCallBack;
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.model.Response;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -60,7 +67,7 @@ public class SDKManager {
 
     private String slug; //是否登录到后端
 
-    private PayDelegate payDelegate;
+    public PayDelegate payDelegate;
 
     private String sessionId = null;
 
@@ -109,6 +116,10 @@ public class SDKManager {
         this.userlistener = userlistener;
     }
 
+    public void consume() {
+        payDelegate.handleOwnedProduct();
+    }
+
     private static class SingletonHolder {
         private static final SDKManager sInstance = new SDKManager();
     }
@@ -122,6 +133,7 @@ public class SDKManager {
     public void init(Activity activity) {
         this.activity = activity;
         payDelegate=new PayDelegate();
+        payDelegate.handleOwnedProduct();
         JosAppsClient appsClient = JosApps.getJosAppsClient(activity);
         appsClient.init();
         //showToastIfdDebug("init success");
@@ -270,9 +282,19 @@ public class SDKManager {
             }
         });
     }
+
+    public void h5OrderJsonPay(String json){
+        payDelegate.h5OrderJsonPay(json);
+
+    }
+    public void paramsPay(HuaweiPayParam huaweiPayParam){
+        payDelegate.paramsPay(huaweiPayParam);
+    }
+
     public void pay(String productId,String payloadOrderNumber ){ //支付，准备加入双击处理
         payDelegate.pay(productId,payloadOrderNumber);
     }
+
 
     private void signInNewWay() {
         Intent intent = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).getSignInIntent();
@@ -337,7 +359,25 @@ public class SDKManager {
                         "accesstoken:" + player.getAccessToken() + "\n" +result);
                 playerId=player.getPlayerId();
                 //todo：should  called after server login
-                userlistener.onLoginSuccess(playerId);
+                serverLogin(player.getAccessToken(), player.getOpenId(), new JsonCallback<LzyResponse<SlugBean>>() {
+                    @Override
+                    public void onSuccess(Response<LzyResponse<SlugBean>> response) {
+                        if(response.body()!=null & response.body().data!=null){
+                            SlugBean data = response.body().data;
+                            userlistener.onLoginSuccess(data.getSlug());
+                        }
+                        else {
+                            userlistener.onLoginError("server error :empty user.");
+                        }
+                    }
+
+                    @Override
+                    public void onError(String errorMsg, int code) {
+                        super.onError(errorMsg, code);
+                        userlistener.onLoginError(errorMsg);
+                    }
+                });
+                //userlistener.onLoginSuccess(playerId);
                 gameBegin();
                 //todo :server login enter game
                 handler = new Handler() {
@@ -576,5 +616,31 @@ public class SDKManager {
         return new HuaweiIdAuthParamsHelper(HuaweiIdAuthParams.DEFAULT_AUTH_REQUEST_PARAM_GAME).createParams(); //todo: 待确认：需不需要setIdToken()
     }
 
+
+    /*--------------------back end functions---------------------------*/
+    private static String baseUrl="https://api.xinglaogame.com/";
+
+    private static String loginApi=baseUrl+"publisher/sdk/v1/huawei/user";
+                                             ///
+    private static String deliverApi=baseUrl+"publisher/sdk/v1/order/huawei/successful";
+
+    public static final String ORDER_CREATE = baseUrl+"publisher/sdk/v1/order";
+
+    private static void serverLogin(String huaweiToken,String openId, JsonCallback<LzyResponse<SlugBean>> callback){
+        OkGo.<LzyResponse<SlugBean>> post(loginApi)
+                .tag(loginApi)
+                .params("accesstoken",huaweiToken)
+                .params("openid",openId)
+                .execute(callback);
+    }
+
+    public static void deliverProduct(String purchaseToken,String productId, String orderNumber,JsonCallback<SimpleResponse> callback){
+        OkGo.<SimpleResponse> post(deliverApi)
+                .tag(deliverApi)
+                .params("purchaseToken",purchaseToken)
+                .params("productId",productId)
+                .params("order_no",orderNumber)
+                .execute(callback);
+    }
 
 }

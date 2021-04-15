@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import com.batam.sdk.SDKManager;
 import com.batam.sdk.Userlistener;
+import com.batam.sdk.data.pay.HuaweiPayParam;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -125,7 +126,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void pay(View view) {
-        SDKManager.getInstance().pay("test01","test123456ABC");
+/*
+        String order ="{\n" +
+                "    \"game_num\": \"1213132131312\",\n" +
+                "    \"value\": \"100\",\n" +
+                "    \"role_name\": \"帅哥\",\n" +
+                "    \"props_name\":\"testproduct01\"," +
+                "    \n" +
+                "        \"role_id\": \"123\",\n" +
+                "        \"server_id\": \"456\",\n" +
+                "        \"server_name\": \"一服\",\n" +
+                "        \"callback_url\":\" http://test.com\",\n" +
+                "        \"extend_data\":\"http://test.com\"\n" +
+                "        \n" +
+                "\n" +
+                "}";
+
+        SDKManager.getInstance().h5OrderJsonPay(order);*/
+        SDKManager.getInstance().paramsPay(new HuaweiPayParam.Builder()
+        .callbackUrl("http://test")
+                .extendData("http://test")
+                .gameOrderNum("testorder123")
+                .price("100")
+                .productId("test01")
+                .productName("testproduct01")
+                .roleID("roleid123")
+                .roleLevel("1")
+                .roleName("shuai")
+                .serverID("server001")
+                .serverName("server001")
+                .build());
+        //SDKManager.getInstance().consume();
     }
 
     public void logout(View view) {
