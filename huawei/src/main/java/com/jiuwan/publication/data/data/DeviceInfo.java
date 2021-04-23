@@ -19,7 +19,7 @@ public class DeviceInfo {
     private String plan_id;
     private String site_id;
     private String user_id = "";
-    private String type = "normal";
+    private String type = "game_yh";
     private String domain = "";
     private String user_pact_url = "";
     private String h5_apk_url = "";

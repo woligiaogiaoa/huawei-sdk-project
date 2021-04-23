@@ -46,13 +46,13 @@ android {
 
 dependencies {
 
-    //implementation 'com.github.woligiaogiaoa:huawei-sdk-project:1.0'
+    implementation 'com.github.woligiaogiaoa:huawei-sdk-project:2.0'
 
     //huawei
-    implementation 'com.huawei.agconnect:agconnect-core:1.4.0.300'
+   /* implementation 'com.huawei.agconnect:agconnect-core:1.4.0.300'
     implementation 'com.huawei.hms:hwid:5.0.3.302'
     implementation 'com.huawei.hms:iap:5.0.4.301'
-    implementation 'com.huawei.hms:game:5.0.4.301'
+    implementation 'com.huawei.hms:game:5.0.4.301'*/
     //oaid
     implementation fileTree('libs')
 
@@ -62,7 +62,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
-    implementation project(path: ':huawei')
+    //implementation project(path: ':huawei')
 //    implementation 'com.jakewharton:butterknife:10.2.3'
 //    annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.3'
 }
