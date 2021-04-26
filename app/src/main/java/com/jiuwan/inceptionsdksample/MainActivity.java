@@ -27,9 +27,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         logining.setValue(false);
         gaming.setValue(false);
-        PublicationSDK.getInstance().init(this);
-        observe();
-        PublicationSDK.getInstance().setLoginCallback(new LoginCallback() {
+
+        /*--------------------sdk api -----*/
+        PublicationSDK.onCreate(this);
+        PublicationSDK.setLoginCallback(new LoginCallback() {
 
             @Override
             public void onLoginSuccess(String userInfo) {
@@ -47,13 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-        PublicationSDK.getInstance().setExitCallback(new ExitCallback() {
-            @Override
-            public void onSuccess() {
-                gaming.setValue(false);
-                logining.setValue(false);
-            }
-        });
+        observe();
     }
 
     private void observe() {
@@ -75,31 +70,36 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        PublicationSDK.getInstance().onStop();
+        /*--------------------sdk api -----*/
+        PublicationSDK.onStop();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        PublicationSDK.getInstance().onPause();
+        /*--------------------sdk api -----*/
+        PublicationSDK.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        PublicationSDK.getInstance().onResume();
+        /*--------------------sdk api -----*/
+        PublicationSDK.onResume();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        PublicationSDK.getInstance().onStart();
+        /*--------------------sdk api -----*/
+        PublicationSDK.onStart();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        PublicationSDK.getInstance().onDestroy();
+        /*--------------------sdk api -----*/
+        PublicationSDK.onDestroy();
     }
 
     MutableLiveData<Boolean> logining= new MutableLiveData<Boolean>();
@@ -108,41 +108,33 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        PublicationSDK.getInstance().onActivityResult(requestCode,resultCode,data);
+        /*--------------------sdk api -----*/
+        PublicationSDK.onActivityResult(requestCode,resultCode,data);
     }
 
     public void login(View view) {
         logining.setValue(true);
-        PublicationSDK.getInstance().login(this);
+        /*--------------------sdk api -----*/
+        PublicationSDK.login(this);
     }
 
     public void switch1(View view) {
+        /*--------------------sdk api -----*/
 
-        PublicationSDK.getInstance().logout();
-        gaming.setValue(false); //退出游戏
-        logining.setValue(true);
-        PublicationSDK.getInstance().login(this);
+        PublicationSDK.exit(this, new ExitCallback() {
+            @Override
+            public void onSuccess() {
+                gaming.setValue(false);
+                logining.setValue(false);
+            }
+        });
+        /*--------------------sdk api -----*/
+        PublicationSDK.login(this);
     }
 
     public void pay(View view) {
-/*
-        String order ="{\n" +
-                "    \"game_num\": \"1213132131312\",\n" +
-                "    \"value\": \"100\",\n" +
-                "    \"role_name\": \"帅哥\",\n" +
-                "    \"props_name\":\"testproduct01\"," +
-                "    \n" +
-                "        \"role_id\": \"123\",\n" +
-                "        \"server_id\": \"456\",\n" +
-                "        \"server_name\": \"一服\",\n" +
-                "        \"callback_url\":\" http://test.com\",\n" +
-                "        \"extend_data\":\"http://test.com\"\n" +
-                "        \n" +
-                "\n" +
-                "}";
-
-        SDKManager.getInstance().h5OrderJsonPay(order);*/
-        PublicationSDK.getInstance().paramsPay(new HuaweiPayParam.Builder()
+        /*--------------------sdk api -----*/
+        PublicationSDK.paramsPay(new HuaweiPayParam.Builder()
         .callbackUrl("http://test")
                 .extendData("http://test")
                 .gameOrderNum("testorder123")
@@ -155,10 +147,16 @@ public class MainActivity extends AppCompatActivity {
                 .serverID("server001")
                 .serverName("server001")
                 .build());
-        //SDKManager.getInstance().consume();
     }
 
     public void logout(View view) {
-        PublicationSDK.getInstance().logout();
+        /*--------------------sdk api -----*/
+        PublicationSDK.exit(this, new ExitCallback() {
+            @Override
+            public void onSuccess() {
+                gaming.setValue(false);
+                logining.setValue(false);
+            }
+        });
     }
 }

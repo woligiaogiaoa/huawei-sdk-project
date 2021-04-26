@@ -10,8 +10,13 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.jiuwan.publication.callback.ExitCallback;
+import com.jiuwan.publication.callback.PayCallback;
+import com.jiuwan.publication.callback.ReportCallback;
+import com.jiuwan.publication.callback.VerifyCallback;
 import com.jiuwan.publication.data.data.DeviceUtils;
+import com.jiuwan.publication.data.login.ChannelUser;
 import com.jiuwan.publication.data.login.SlugBean;
 import com.jiuwan.publication.data.pay.HuaweiPayParam;
 import com.jiuwan.publication.http.JsonCallback;
@@ -86,16 +91,9 @@ public class PublicationSDK {
         return activity;
     }
 
-    public void setActivity(Activity activity) {
-        this.activity = activity;
-    }
-
     private PublicationSDK() {
     }
 
-    private void setPlayId(String openId){
-        playerId=openId;
-    }
 
     public static PublicationSDK getInstance() {
         return SingletonHolder.sInstance;
@@ -105,26 +103,15 @@ public class PublicationSDK {
         return application;
     }
 
-    public void setApplication(Application application) {
-        this.application = application;
-    }
 
-    public LoginCallback getLoginCallback() {
-        return loginCallback;
-    }
-
-    public void setLoginCallback(LoginCallback loginCallback) {
-        this.loginCallback = loginCallback;
+    public static  void setLoginCallback(LoginCallback loginCallback) {
+        getInstance().loginCallback = loginCallback;
     }
 
     private ExitCallback exitCallback;
 
-    public ExitCallback getExitCallback() {
-        return exitCallback;
-    }
-
-    public void setExitCallback(ExitCallback exitCallback) {
-        this.exitCallback = exitCallback;
+    public static void setExitCallback(ExitCallback exitCallback) {
+        getInstance().exitCallback = exitCallback;
     }
 
     public void consume() {
@@ -135,13 +122,24 @@ public class PublicationSDK {
         private static final PublicationSDK sInstance = new PublicationSDK();
     }
 
-    public void setApplicationContext(Application application) {
+
+    //application init
+    public static void init(Application application){
+        getInstance().initInternal(application);
+    }
+
+    private void initInternal(Application application) {
         this.application = application;
         HuaweiMobileServicesUtil.setApplication(application); //huawei api
         DeviceUtils.setApp(application);
     }
 
-    public void init(Activity activity) {
+    //activity create
+    public static void onCreate(Activity activity){
+        getInstance().onCreateInternal(activity);
+    }
+
+    public void onCreateInternal(Activity activity) {
         this.activity = activity;
         payDelegate=new PayDelegate();
         payDelegate.handleOwnedProduct();
@@ -193,22 +191,22 @@ public class PublicationSDK {
         });
     }
 
-    public void onStop() {
-        gameEnd();
+    public static void onStop() {
+        getInstance().gameEnd();
         Log.e(TAG, "onStop");
     }
 
-    public void onStart() {
-        gameBegin();
+    public static void onStart() {
+        getInstance().gameBegin();
         Log.e(TAG, "onStart");
     }
 
-    public void onPause() {
-        hideFloatWindowNewWay();
+    public static void onPause() {
+        getInstance().hideFloatWindowNewWay();
     }
 
-    public void onResume() {
-        showFloatWindowNewWay();
+    public static void onResume() {
+        getInstance().showFloatWindowNewWay();
         //fixme:check player
        // checkPlayer();
         Log.e(TAG, "onResume");
@@ -231,10 +229,10 @@ public class PublicationSDK {
                 Log.e(TAG, "resume openid:"+player.getOpenId() +"\n"+"original playerid:" +playerId );
                 if(!TextUtils.isEmpty(playerId)){
                     if(!playerId.equals(playerWhenResume)){
-                        if(loginCallback !=null){
-                            logout();
+                       /* if(loginCallback !=null){
+                            exist();
                             //userlistener.onUserSwitchAccount(); //
-                        }
+                        }*/
                     }
                 }
             }
@@ -249,15 +247,22 @@ public class PublicationSDK {
         });
     }
 
-    public void onDestroy() {
+    public static void onDestroy() {
+        getInstance().gameEnd();
         Log.e(TAG, "onDestroy");
     }
 
-    public void logout(){
+    public static void exit(Activity context, ExitCallback exitCallback){
+        getInstance().existInternal(exitCallback);
+    }
+
+    private void existInternal(ExitCallback callback){
         gameEnd();
         playerId=null; //sdk逻辑上的退出，不用管华为的。强制重新登陆。
         //userlistener.onLogout();
-        exitCallback.onSuccess();
+        if(callback!=null){
+            callback.onSuccess();
+        }
         Task<Void> huaweiLogoutTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).signOut();
         huaweiLogoutTask.addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
@@ -268,8 +273,11 @@ public class PublicationSDK {
         });
     }
 
+    public static void login(final Context context) {
+        getInstance().loginInternal(context);
+    }
 
-    public void login(Context context) {
+    public  void loginInternal(Context context) {
         Task<AuthHuaweiId> authHuaweiIdTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).silentSignIn();
         authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
             @Override
@@ -295,17 +303,27 @@ public class PublicationSDK {
         });
     }
 
-    public void h5OrderJsonPay(String json){
-        payDelegate.h5OrderJsonPay(json);
+
+    public static void pay(Context context,String jsonPayString){
+        getInstance().payDelegate.h5OrderJsonPay(jsonPayString);
 
     }
-    public void paramsPay(HuaweiPayParam huaweiPayParam){
-        payDelegate.paramsPay(huaweiPayParam);
+    public static void paramsPay(HuaweiPayParam huaweiPayParam){
+        getInstance().payDelegate.paramsPay(huaweiPayParam);
     }
 
-    public void pay(String productId,String payloadOrderNumber ){ //支付，准备加入双击处理
-        payDelegate.pay(productId,payloadOrderNumber);
+    public static void setPayCallback(PayCallback payCallback) {
+        //we do not need that
     }
+
+    public static void reportUserGameInfoData(String info, ReportCallback reportCallback) {
+        //we do not need that
+    }
+
+    public static void verify(final VerifyCallback verifyCallback) {
+
+    }
+
 
 
     private void signInNewWay() {
@@ -315,7 +333,12 @@ public class PublicationSDK {
 
 
 
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public static void onActivityResult(int requestCode, int resultCode, Intent data) {
+        getInstance().onActivityResultInternal(requestCode,resultCode,data);
+    }
+
+
+    public void onActivityResultInternal(int requestCode, int resultCode, Intent data) {
         if (SIGN_IN_INTENT == requestCode) {
             handleSignInResult(data);
         }
@@ -377,7 +400,10 @@ public class PublicationSDK {
                         if(response.body()!=null & response.body().data!=null){
                             SlugBean data = response.body().data;
                             payDelegate.handleOwnedProduct();
-                            loginCallback.onLoginSuccess(data.getSlug());
+                            String auth = response.getRawResponse().header(KEY_HTTP_AUTH_HEADER);
+                            loginCallback.onLoginSuccess(new Gson().toJson(
+                                    new ChannelUser(data.getSlug(),auth!=null?  auth :""  )
+                            ));
                         }
                         else {
                             loginCallback.onLoginError("server error :empty user.",-1);
@@ -535,7 +561,7 @@ public class PublicationSDK {
      */
     private void showFloatWindowNewWay() {
         if (!hasInit) {
-            init(activity);
+            onCreate(activity);
         }
         Games.getBuoyClient(activity).showFloatWindow();
     }

@@ -70,7 +70,7 @@ afterEvaluate {
                 // You can then customize attributes of the publication as shown below.
                 groupId = 'com.jiuwan.publication'
                 artifactId = 'huawei'
-                version = '2.0'
+                version = '3.0'
             }
           /*  // Creates a Maven publication called “debug”.
             debug(MavenPublication) {

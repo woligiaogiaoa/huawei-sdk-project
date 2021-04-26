@@ -8,6 +8,6 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        PublicationSDK.getInstance().setApplicationContext(this);
+        PublicationSDK.init(this);
     }
 }

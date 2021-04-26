@@ -106,7 +106,7 @@ public class PayDelegate {
         paramsMap.put("sign",OrderUtil.encryptPaySign(PublicationSDK.getInstance().getActivity(), paramsMap));
         //platformPayParam.price=fen2yuan(platformPayParam.price) //price String ext :6.00
         //mainActivity?.showProgress("")
-        String inAppProductId=    "test01" ;           //platformPayParam.productId; //todo:匹配华为的 product id
+        String inAppProductId=  platformPayParam.productId ;           //platformPayParam.productId; //todo:匹配华为的 product id
         OkGo.<LzyResponse<OrderNumberBean>>post(ORDER_CREATE)
                 .tag(ORDER_CREATE)
                 .params(paramsMap)
@@ -127,9 +127,6 @@ public class PayDelegate {
                 });
     }
 
-    public void pay(String storeProductId,String developerPayloadOrderNumber){
-        checkPayEnvAndMaybePay(storeProductId,developerPayloadOrderNumber);
-    }
     public void checkPayEnvAndMaybePay(String storeProductId, String developerPayloadOrderNumber){
         // 获取调用接口的Activity对象
         Activity activity = PublicationSDK.getInstance().getActivity();
