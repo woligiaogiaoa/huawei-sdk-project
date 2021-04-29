@@ -46,7 +46,7 @@ android {
 
 dependencies {
 
-    //implementation 'com.github.woligiaogiaoa:huawei-sdk-project:2.0'
+    //implementation 'com.github.woligiaogiaoa:huawei-sdk-project:3.0'
 
     //huawei
    /* implementation 'com.huawei.agconnect:agconnect-core:1.4.0.300'

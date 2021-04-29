@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
@@ -22,6 +23,7 @@ import com.jiuwan.publication.data.pay.HuaweiPayParam;
 import com.jiuwan.publication.http.JsonCallback;
 import com.jiuwan.publication.http.LzyResponse;
 import com.jiuwan.publication.http.SimpleResponse;
+import com.jiuwan.publication.privacy.DialogActivity;
 import com.jiuwan.publication.util.SignInCenter;
 import com.huawei.hmf.tasks.OnCompleteListener;
 import com.huawei.hmf.tasks.OnFailureListener;
@@ -62,6 +64,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 
+import static android.app.Activity.RESULT_OK;
+import static com.jiuwan.publication.privacy.AgreementDialogFragment.AGREE_KEY;
+
+//fixme:加载框没加
 public class PublicationSDK {
 
     private static final String TAG = PublicationSDK.class.getSimpleName();
@@ -92,6 +98,7 @@ public class PublicationSDK {
     }
 
     private PublicationSDK() {
+
     }
 
 
@@ -132,6 +139,7 @@ public class PublicationSDK {
         this.application = application;
         HuaweiMobileServicesUtil.setApplication(application); //huawei api
         DeviceUtils.setApp(application);
+        getGoodsAndPrivavy();
     }
 
     //activity create
@@ -277,30 +285,46 @@ public class PublicationSDK {
         getInstance().loginInternal(context);
     }
 
+
+    private static final int CODE_PRIVACY= 12121;
+
     public  void loginInternal(Context context) {
-        Task<AuthHuaweiId> authHuaweiIdTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).silentSignIn();
-        authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
-            @Override
-            public void onSuccess(AuthHuaweiId authHuaweiId) {
-                //showToastIfdDebug("signIn success");
-                //showToastIfdDebug("display:" + authHuaweiId.getDisplayName());
-                SignInCenter.get().updateAuthHuaweiId(authHuaweiId);
-                getCurrentPlayerServerLogin();
+
+        boolean agree= PreferenceManager.getDefaultSharedPreferences(context).getBoolean(AGREE_KEY,false);
+        if(!agree){ //用户未同意隐私协议
+            try {
+                Intent intent=new Intent(activity, DialogActivity.class);
+                activity.startActivityForResult(intent,CODE_PRIVACY);
+            } catch (Exception e) {
+                e.printStackTrace();
+                loginCallback.onFailure("user privacy error",-1);
             }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(Exception e) {
-                if (e instanceof ApiException) {
-                    ApiException apiException = (ApiException) e;
-                    //showToastIfdDebug("signIn failed:" + apiException.getStatusCode());
-                    showToastIfdDebug("start silentSignIn getSignInIntent");
-                    signInNewWay();
+        }else {
+            //用户已同意隐私协议
+            Task<AuthHuaweiId> authHuaweiIdTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).silentSignIn();
+            authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
+                @Override
+                public void onSuccess(AuthHuaweiId authHuaweiId) {
+                    //showToastIfdDebug("signIn success");
+                    //showToastIfdDebug("display:" + authHuaweiId.getDisplayName());
+                    SignInCenter.get().updateAuthHuaweiId(authHuaweiId);
+                    getCurrentPlayerServerLogin();
                 }
-                else {
-                   loginCallback.onLoginError(e.getMessage(),-1);
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(Exception e) {
+                    if (e instanceof ApiException) {
+                        ApiException apiException = (ApiException) e;
+                        //showToastIfdDebug("signIn failed:" + apiException.getStatusCode());
+                        showToastIfdDebug("start silentSignIn getSignInIntent");
+                        signInNewWay();
+                    }
+                    else {
+                        loginCallback.onFailure(e.getMessage(),-1);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
 
@@ -339,23 +363,55 @@ public class PublicationSDK {
 
 
     public void onActivityResultInternal(int requestCode, int resultCode, Intent data) {
-        if (SIGN_IN_INTENT == requestCode) {
+        if (SIGN_IN_INTENT == requestCode) { //handle huawei login
             handleSignInResult(data);
         }
+        //handle user accept user provacy
+        if(requestCode ==CODE_PRIVACY ){
+            if(resultCode == RESULT_OK){ //用户已同意隐私协议
+                Task<AuthHuaweiId> authHuaweiIdTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).silentSignIn();
+                authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
+                    @Override
+                    public void onSuccess(AuthHuaweiId authHuaweiId) {
+                        //showToastIfdDebug("signIn success");
+                        //showToastIfdDebug("display:" + authHuaweiId.getDisplayName());
+                        SignInCenter.get().updateAuthHuaweiId(authHuaweiId);
+                        getCurrentPlayerServerLogin();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(Exception e) {
+                        if (e instanceof ApiException) {
+                            ApiException apiException = (ApiException) e;
+                            //showToastIfdDebug("signIn failed:" + apiException.getStatusCode());
+                            showToastIfdDebug("start silentSignIn getSignInIntent");
+                            signInNewWay();
+                        }
+                        else {
+                            loginCallback.onFailure(e.getMessage(),-1);
+                        }
+                    }
+                });
+            }
+            else { //用户未同意隐私协议
+                loginCallback.onFailure("user privacy error",-1);
+            }
+        }
+        //handle pay result
         payDelegate.onActivityResult(requestCode,resultCode,data);
     }
 
     private void handleSignInResult(Intent data) {
         if (null == data) {
             showToastIfdDebug("signIn inetnt is null");
-            loginCallback.onLoginError("SignIn result is null",-1);
+            loginCallback.onFailure("SignIn result is null",-1);
             return;
         }
         // HuaweiIdSignIn.getSignedInAccountFromIntent(data);
         String jsonSignInResult = data.getStringExtra("HUAWEIID_SIGNIN_RESULT");
         if (TextUtils.isEmpty(jsonSignInResult)) {
             showToastIfdDebug("SignIn result is empty");
-            loginCallback.onLoginError("SignIn result is empty",-1);
+            loginCallback.onFailure("SignIn result is empty",-1);
             return;
         }
         try {
@@ -366,11 +422,11 @@ public class PublicationSDK {
                 SignInCenter.get().updateAuthHuaweiId(signInResult.getHuaweiId());
                 login(activity);
             } else {
-                loginCallback.onLoginError("Sign in failed: " + signInResult.getStatus().getStatusCode(),-1);
+                loginCallback.onFailure("Sign in failed: " + signInResult.getStatus().getStatusCode(),-1);
                 showToastIfdDebug("Sign in failed: " + signInResult.getStatus().getStatusCode());
             }
         } catch (JSONException var7) {
-            loginCallback.onLoginError("Sign in failed: " + "Failed to convert json from signInResult.",-1);
+            loginCallback.onFailure("Sign in failed: " + "Failed to convert json from signInResult.",-1);
             showToastIfdDebug("Failed to convert json from signInResult.");
         }
     }
@@ -401,19 +457,20 @@ public class PublicationSDK {
                             SlugBean data = response.body().data;
                             payDelegate.handleOwnedProduct();
                             String auth = response.getRawResponse().header(KEY_HTTP_AUTH_HEADER);
-                            loginCallback.onLoginSuccess(new Gson().toJson(
+                            loginCallback.onSuccess(new Gson().toJson(
                                     new ChannelUser(data.getSlug(),auth!=null?  auth :""  )
                             ));
+                            getGoodsAndPrivavy();
                         }
                         else {
-                            loginCallback.onLoginError("server error :empty user.",-1);
+                            loginCallback.onFailure("server error :empty user.",-1);
                         }
                     }
 
                     @Override
                     public void onError(String errorMsg, int code) {
                         super.onError(errorMsg, code);
-                        loginCallback.onLoginError(errorMsg,code);
+                        loginCallback.onFailure(errorMsg,code);
                     }
                 });
                 //userlistener.onLoginSuccess(playerId);
@@ -441,7 +498,7 @@ public class PublicationSDK {
                     String result = "getcurrent player and server login rtnCode:" + ((ApiException) e).getStatusCode();
                     showToastIfdDebug(result);
                 }
-                loginCallback.onLoginError(e.getMessage(),-1);
+                loginCallback.onFailure(e.getMessage(),-1);
             }
         });
     }
@@ -681,5 +738,36 @@ public class PublicationSDK {
                 .params("order_no",orderNumber)
                 .execute(callback);
     }
+
+
+    /*渠道初始化获取与用户协议和商品*/
+
+    public static final String CHANNEL_INIT = baseUrl+"publisher/sdk/v1/channel";
+
+    //note :best to luanch game after this
+    public static void channelInit(JsonCallback<LzyResponse<GoodsAndPrivacy>> callback){
+        OkGo.<LzyResponse<GoodsAndPrivacy>>
+                get(CHANNEL_INIT)
+                .tag(CHANNEL_INIT)
+                .execute(callback);
+    }
+
+
+    public static GoodsAndPrivacy goodsAndPrivacy;
+
+    public static void getGoodsAndPrivavy() {
+        channelInit(new JsonCallback<LzyResponse<GoodsAndPrivacy>>() {
+            @Override
+            public void onSuccess(Response<LzyResponse<GoodsAndPrivacy>> response) {
+                if(response!=null ){
+                    if(response.body()!=null){
+                        goodsAndPrivacy=response.body().data;
+                    }
+                }
+            }
+        });
+    }
+
+
 
 }

@@ -58,13 +58,38 @@ public class PayDelegate {
     private final int REQ_CODE_BUY=10001;
     private final int REQ_CODE_LOGIN=10002;
 
+    private static String checkAmount(String amount,String ProductId){
+        GoodsAndPrivacy goodsAndPrivacy=PublicationSDK.goodsAndPrivacy;
+        if(goodsAndPrivacy==null) return null;
+
+        try {
+            GoodsAndPrivacy.Good target=null;
+
+            for (GoodsAndPrivacy.Good good : goodsAndPrivacy.getGoods()) {
+                if(good.getCp_id().equals(ProductId)){
+                    target =good;
+                    break;
+                }
+            }
+            if(target==null) return null;
+            Float yuan=Float.parseFloat(target.getMoney());
+            Integer fen=(int)(yuan * 100);
+            return fen.toString().equals(amount) ? target.getC_id() : null;
+        }catch (Exception e ){
+            return  null;
+        }
+    }
+
 
     public void h5OrderJsonPay(String orderJson){ //需要游戏传过来 huawei 的 productId
         try {
             JSONObject jsonObject = new JSONObject(orderJson);
             String gameNum = jsonObject.optString("game_num", "");
-            String amount = jsonObject.optString("value", "");
-            //String slug = jsonObject.optString("slug", "");
+            //String amount = jsonObject.optString("value", "");
+            String amount = jsonObject.optString("fs_value", "");
+            if(TextUtils.isEmpty(amount)){
+                amount=jsonObject.optString("value", "");
+            }
             String productName = jsonObject.optString("props_name", "");
             String roleName = jsonObject.optString("role_name", "");
             String roleId = jsonObject.optString("role_id", "");
@@ -73,6 +98,11 @@ public class PayDelegate {
                 String productID = jsonObject.optString("productID", "-1");
             String callbackUrl = jsonObject.optString("callback_url", "");
             String extendData = jsonObject.optString("extend_data", "");
+            String inAppId=checkAmount(amount,productID);
+            if(TextUtils.isEmpty(checkAmount(amount,productID))){
+                Log.e(TAG, "h5OrderJsonPay: 金额校验失败" );
+                return;
+            }
             HuaweiPayParam huaweiPayParam = new HuaweiPayParam.Builder()
                     .gameOrderNum(gameNum)
                     .price(amount)
@@ -82,7 +112,7 @@ public class PayDelegate {
                     .serverID(serverId)
                     .serverName(serverName)
                     .callbackUrl(callbackUrl)
-                    .productId(productID)
+                    .productId(inAppId)
                     .extendData(extendData)
                     .build();
             paramsPay(huaweiPayParam);

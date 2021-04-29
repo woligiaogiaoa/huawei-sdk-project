@@ -10,4 +10,10 @@
             <action android:name="com.huawei.hms.core.aidlservice" />
         </intent>
     </queries>
+    <application>
+        <activity android:name=".privacy.DialogActivity"
+            android:theme="@style/JiuwanSdkDialogActivityTheme"
+            android:configChanges="locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection"
+            android:launchMode="singleTop"/>
+    </application>
 </manifest>

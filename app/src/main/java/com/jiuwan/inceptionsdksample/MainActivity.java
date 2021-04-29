@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         PublicationSDK.setLoginCallback(new LoginCallback() {
 
             @Override
-            public void onLoginSuccess(String userInfo) {
+            public void onSuccess(String userInfo) {
                 Log.e(TAG, "onLoginSuccess id: "+userInfo );
                 gaming.setValue(true);
                 logining.setValue(false);
@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onLoginError(String message,int code) {
+            public void onFailure(String message, int code) {
                 Toast.makeText(MainActivity.this,message,Toast.LENGTH_LONG).show();
                 logining.setValue(false);
             }
