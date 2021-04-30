@@ -87,20 +87,23 @@ public class PayDelegate {
             String gameNum = jsonObject.optString("game_num", "");
             //String amount = jsonObject.optString("value", "");
             String amount = jsonObject.optString("fs_value", "");
-            if(TextUtils.isEmpty(amount)){
-                amount=jsonObject.optString("value", "");
+            if (TextUtils.isEmpty(amount)) {
+                amount = jsonObject.optString("value", "");
             }
             String productName = jsonObject.optString("props_name", "");
             String roleName = jsonObject.optString("role_name", "");
             String roleId = jsonObject.optString("role_id", "");
             String serverId = jsonObject.optString("server_id", "");
             String serverName = jsonObject.optString("server_name", "");
-                String productID = jsonObject.optString("productID", "-1");
+            String productID = jsonObject.optString("productID", "");
+            if (TextUtils.isEmpty(productID)) {
+                productID = jsonObject.optString("product_id", "");
+            }
             String callbackUrl = jsonObject.optString("callback_url", "");
             String extendData = jsonObject.optString("extend_data", "");
-            String inAppId=checkAmount(amount,productID);
-            if(TextUtils.isEmpty(checkAmount(amount,productID))){
-                Log.e(TAG, "h5OrderJsonPay: 金额校验失败" );
+            String inAppId = checkAmount(amount, productID);
+            if (TextUtils.isEmpty(checkAmount(amount, productID))) {
+                Log.e(TAG, "h5OrderJsonPay: 金额校验失败");
                 return;
             }
             HuaweiPayParam huaweiPayParam = new HuaweiPayParam.Builder()
