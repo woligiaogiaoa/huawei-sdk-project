@@ -5,6 +5,16 @@ import java.util.List;
 public class GoodsAndPrivacy {
     String pvy;
 
+    String ptl;
+
+    public String getPtl() {
+        return ptl;
+    }
+
+    public void setPtl(String ptl) {
+        this.ptl = ptl;
+    }
+
     List<Good> goods;
 
     public List<Good> getGoods() {

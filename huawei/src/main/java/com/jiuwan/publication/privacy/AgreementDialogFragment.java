@@ -95,7 +95,7 @@ public class AgreementDialogFragment extends CenterDialogFragment {
     void setTermsClickDestination(TextView view) {
         SpannableStringBuilder smsLoginTermsBuilder = new SpannableStringBuilder(view.getText());
         String text = view.getText().toString();
-        int index1 = 39;
+        int index1 = 39+9;
         smsLoginTermsBuilder.setSpan(
                 new ForegroundColorSpan(Color.parseColor("#7BC2DB")),
                 index1, index1+5, Spanned.SPAN_INCLUSIVE_INCLUSIVE
@@ -104,7 +104,7 @@ public class AgreementDialogFragment extends CenterDialogFragment {
             @Override
             public void onClick(@NonNull View widget) {
                 if(PublicationSDK.goodsAndPrivacy!=null){
-                    String url = PublicationSDK.goodsAndPrivacy.getPvy();
+                    String url = PublicationSDK.goodsAndPrivacy.getPtl();
                     try {
                         if (!url.startsWith("http://") && !url.startsWith("https://"))
                             url = "http://" + url;

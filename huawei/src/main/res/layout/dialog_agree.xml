@@ -13,7 +13,7 @@
         android:orientation="vertical"
         android:layout_height="wrap_content" >
         <TextView
-            android:text="个人信息保护提示"
+            android:text="用户协议和隐私协议保护指引"
             android:layout_margin="15dp"
             android:layout_gravity="center_horizontal"
             android:layout_width="wrap_content"
@@ -22,7 +22,9 @@
 
         <TextView
             android:id="@+id/tv_privacy"
-            android:text="我们非常重视您的个人信息和隐私保护，为了保护您的个人权益，在使用前，请务必阅读《用户协议》和《隐私协议》\n\n如果您同意此协议，请点击“同意”按钮"
+            android:text="感谢您使用本游戏，我们非常重视您的个人信息和隐私保护，为了保障您的个人权益，在使用前，请务必阅读《用户协议》和《隐私协议》。
+\n\n如您拒绝，将无法进入游戏。\n\n
+如果您同意此协议，请点击“同意”按钮开始接受我们的游戏服务。"
             android:layout_gravity="center_horizontal"
             android:textSize="12sp"
             android:layout_margin="10dp"
