@@ -33,6 +33,16 @@ public class GoodsAndPrivacy {
         this.pvy = pvy;
     }
 
+    Boolean protocol_box;
+
+    public Boolean getProtocol_box() {
+        return protocol_box;
+    }
+
+    public void setProtocol_box(Boolean protocol_box) {
+        this.protocol_box = protocol_box;
+    }
+
     public static class Good{
         String cp_id;
         String c_id;

@@ -291,6 +291,8 @@ public class PublicationSDK {
     public  void loginInternal(Context context) {
 
         boolean agree= PreferenceManager.getDefaultSharedPreferences(context).getBoolean(AGREE_KEY,false);
+        if(goodsAndPrivacy!=null && goodsAndPrivacy.getProtocol_box()!=null && !goodsAndPrivacy.getProtocol_box())
+            agree=true;
         if(!agree){ //用户未同意隐私协议
             try {
                 Intent intent=new Intent(activity, DialogActivity.class);
