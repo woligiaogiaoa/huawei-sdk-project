@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
@@ -140,6 +141,31 @@ public class PublicationSDK {
         HuaweiMobileServicesUtil.setApplication(application); //huawei api
         DeviceUtils.setApp(application);
         getGoodsAndPrivavy();
+
+        sharedPreferences=PreferenceManager.getDefaultSharedPreferences(application);
+        activateIfNot();
+    }
+
+    private static SharedPreferences sharedPreferences;
+
+    private static final String activationKey  = "activation";
+
+    private static void activateIfNot(){
+        //oaid获取是异步的，所以延迟1.5秒
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if(!sharedPreferences.getBoolean(activationKey,false)){
+                    activate(new JsonCallback<LzyResponse<Object>>() {
+                        @Override
+                        public void onSuccess(Response<LzyResponse<Object>> response) {
+                            sharedPreferences.edit().putBoolean(activationKey,true).apply();
+                        }
+                    });
+                }
+            }
+        }, 1500);
+
     }
 
     //activity create
@@ -463,6 +489,7 @@ public class PublicationSDK {
                                     new ChannelUser(data.getSlug(),auth!=null?  auth :""  )
                             ));
                             getGoodsAndPrivavy();
+                            activateIfNot();
                         }
                         else {
                             loginCallback.onFailure("server error :empty user.",-1);
@@ -768,6 +795,15 @@ public class PublicationSDK {
                 }
             }
         });
+    }
+
+    private static final String activationApi  = baseUrl+"publisher/sdk/v1/activation";
+
+    public static void activate (JsonCallback<LzyResponse<Object>> callback){
+        OkGo.<LzyResponse<Object>>
+                post(activationApi)
+                .tag(activationApi)
+                .execute(callback);
     }
 
 
