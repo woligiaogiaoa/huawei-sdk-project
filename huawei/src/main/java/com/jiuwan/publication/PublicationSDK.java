@@ -489,7 +489,14 @@ public class PublicationSDK {
                                     new ChannelUser(data.getSlug(),auth!=null?  auth :""  )
                             ));
                             getGoodsAndPrivavy();
-                            activateIfNot();
+                            if(!sharedPreferences.getBoolean(activationKey,false)){
+                                activate(new JsonCallback<LzyResponse<Object>>() {
+                                    @Override
+                                    public void onSuccess(Response<LzyResponse<Object>> response) {
+                                        sharedPreferences.edit().putBoolean(activationKey,true).apply();
+                                    }
+                                });
+                            }
                         }
                         else {
                             loginCallback.onFailure("server error :empty user.",-1);
