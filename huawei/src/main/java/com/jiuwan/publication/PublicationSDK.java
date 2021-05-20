@@ -67,6 +67,7 @@ import java.util.UUID;
 
 import static android.app.Activity.RESULT_OK;
 import static com.jiuwan.publication.privacy.AgreementDialogFragment.AGREE_KEY;
+import static com.jiuwan.publication.privacy.DialogActivity.DIALOG_CANCELLABLE;
 
 //fixme:加载框没加
 public class PublicationSDK {
@@ -167,6 +168,59 @@ public class PublicationSDK {
         }, 1500);
 
     }
+
+    /*------------------------开屏隐私协议----------------------*/
+    private static final int CODE_PRIVACY = 661;
+
+    public interface PrivacyCallback {
+        void onSuccess(String result);
+
+        void onFailure(String msg, int code);
+    }
+
+
+    private static PrivacyCallback privacyCallback;
+
+
+
+    public static void requestPrivacyAgreement(Activity activity,PrivacyCallback privacyCallback){
+
+        PublicationSDK.privacyCallback=privacyCallback;
+
+
+        boolean agree= PreferenceManager.getDefaultSharedPreferences(activity).getBoolean(AGREE_KEY,false);
+        if(!agree){
+            try {
+                Intent intent=new Intent(activity, DialogActivity.class);
+                intent.putExtra(DIALOG_CANCELLABLE,false);
+                activity.startActivityForResult(intent, CODE_PRIVACY);
+            } catch (Exception e) {
+                e.printStackTrace();
+                //ignore
+            }
+        }else { //同意了
+          /*  try {
+                Intent intent=new Intent(activity, DialogActivity.class);
+                intent.putExtra(DIALOG_CANCELLABLE,false);
+                activity.startActivityForResult(intent, CODE_PRIVACY);
+            } catch (Exception e) {
+                e.printStackTrace();
+                //ignore
+            }*/
+            privacyCallback.onSuccess("");
+        }
+    }
+
+    private static void handlePrivacy(int resultCode){
+        if(resultCode == RESULT_OK){
+            privacyCallback.onSuccess("");
+        }
+        else {
+            privacyCallback.onFailure("denied",-1);
+        }
+    }
+
+    /*------------------------开屏隐私协议----------------------*/
 
     //activity create
     public static void onCreate(Activity activity){
@@ -312,7 +366,7 @@ public class PublicationSDK {
     }
 
 
-    private static final int CODE_PRIVACY= 12121;
+    private static final int CODE_PRIVACY_LOGIN = 12121;
 
     public  void loginInternal(Context context) {
 
@@ -322,7 +376,7 @@ public class PublicationSDK {
         if(!agree){ //用户未同意隐私协议
             try {
                 Intent intent=new Intent(activity, DialogActivity.class);
-                activity.startActivityForResult(intent,CODE_PRIVACY);
+                activity.startActivityForResult(intent, CODE_PRIVACY_LOGIN);
             } catch (Exception e) {
                 e.printStackTrace();
                 loginCallback.onFailure("user privacy error",-1);
@@ -395,7 +449,7 @@ public class PublicationSDK {
             handleSignInResult(data);
         }
         //handle user accept user provacy
-        if(requestCode ==CODE_PRIVACY ){
+        if(requestCode == CODE_PRIVACY_LOGIN){
             if(resultCode == RESULT_OK){ //用户已同意隐私协议
                 Task<AuthHuaweiId> authHuaweiIdTask = HuaweiIdAuthManager.getService(activity, getHuaweiIdParams()).silentSignIn();
                 authHuaweiIdTask.addOnSuccessListener(new OnSuccessListener<AuthHuaweiId>() {
@@ -427,6 +481,10 @@ public class PublicationSDK {
         }
         //handle pay result
         payDelegate.onActivityResult(requestCode,resultCode,data);
+
+        if(requestCode == CODE_PRIVACY){
+            handlePrivacy(resultCode);
+        }
     }
 
     private void handleSignInResult(Intent data) {
